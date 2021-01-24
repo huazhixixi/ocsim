@@ -4,49 +4,9 @@ import contextlib
 
 import types
 from functools import wraps
+from .utilities import normalize
+from .utilities import to
 
-
-def device_selection(device):
-    def inner(func):
-        def real_func(*args, **kwargs):
-            if 'cuda' in device:
-                print('gpu')
-            else:
-                print('cpu')
-
-            # return func(signal,*args,**kwargs)
-
-        return real_func
-
-    return inner
-
-
-def normalize(signal, device):
-    @device_selection(device)
-    def normalize_():
-        signal[:] = signal[:]
-
-    normalize_()
-
-
-def to(signal, device):
-    @device_selection(device)
-    def to_():
-
-        if 'cuda' in device:
-            import cupy as cp
-            signal.samples = cp.asarray(signal.samples, order='F')
-            return signal
-
-        if 'cpu' in device:
-            import cupy as cp
-            signal.samples = cp.asnumpy(signal.samples, order='F')
-            return signal
-
-    if device == signal.device:
-        return signal
-    else:
-        to_()
 
 
 class Signal(object):
