@@ -1,5 +1,52 @@
 import numpy as np
-from .. import CUDA_AVA
+# from .. import CUDA_AVA
+import contextlib
+
+import types
+from functools import wraps
+
+
+def device_selection(device):
+    def inner(func):
+        def real_func(*args, **kwargs):
+            if 'cuda' in device:
+                print('gpu')
+            else:
+                print('cpu')
+
+            # return func(signal,*args,**kwargs)
+
+        return real_func
+
+    return inner
+
+
+def normalize(signal, device):
+    @device_selection(device)
+    def normalize_():
+        signal[:] = signal[:]
+
+    normalize_()
+
+
+def to(signal, device):
+    @device_selection(device)
+    def to_():
+
+        if 'cuda' in device:
+            import cupy as cp
+            signal.samples = cp.asarray(signal.samples, order='F')
+            return signal
+
+        if 'cpu' in device:
+            import cupy as cp
+            signal.samples = cp.asnumpy(signal.samples, order='F')
+            return signal
+
+    if device == signal.device:
+        return signal
+    else:
+        to_()
 
 
 class Signal(object):
@@ -10,8 +57,8 @@ class Signal(object):
                  center_frequency,
 
                  samples,
-                 device = 'cpu',
-                 sps_dsp = None,
+                 device='cpu',
+                 sps_dsp=None,
 
                  ):
 
@@ -24,39 +71,18 @@ class Signal(object):
         self.engine = None
         self.to(self.device)
 
-
-    def device_context_manager(self):
-
-        pass
-
     def ensure_sample_dim(self):
         self.engine.atleast_2d(self.samples)
 
     @property
     def device_number(self):
-        return int(self.device.split(':')[-1])
+        try:
+            return int(self.device.split(':')[-1])
+        except Exception:
+            return None
 
-    def to(self,device):
-
-        if device == self.device:
-            return self
-
-        if 'cuda' in self.device:
-            assert CUDA_AVA
-            import cupy as cp
-            with cp.cuda.Device(self.device_number):
-                self.samples = cp.asarray(self.samples,order='F')
-                self.device = device
-                self.engine = cp
-            return self
-
-        if 'cpu' == self.device:
-            import cupy as cp
-            with cp.cuda.Device(self.device_number):
-                self.samples = cp.asnumpy(self.samples,order='F')
-                self.device = 'cpu'
-                self.engine = np
-            return self
+    def to(self, device):
+        return to(self, self.device)
 
     def __getitem__(self, item):
         return self.samples[item]
@@ -64,6 +90,45 @@ class Signal(object):
     def __setitem__(self, key, value):
         self.samples[key] = value
 
-    def normalise(self):
+    def normalize(self):
+        return normalize(self, self.device)
+
+    @classmethod
+    def load_from_mat(cls, name):
         pass
 
+
+class QamSignal(Signal):
+
+    def __init__(self,
+                 qam_order,
+                 symbol_number,
+                 sps_in_fiber,
+                 symbol_rate,
+                 center_frequency,
+                 device='cpu',
+                 sps_dsp=None,
+                 is_int=True,
+                 pol_dim=2
+                 ):
+        self.qam_order = qam_order
+        self.symbol_number = symbol_number
+        self.sps_dsp = 2 if sps_dsp is None else sps_dsp
+        self.pol_number = pol_dim
+
+        if is_int:
+            self.map()
+            samples = np.zeros((self.symbol_number * self.sps_dsp, self.pol_number), order='F')
+            super(QamSignal, self).__init__(sps_in_fiber=sps_in_fiber, symbol_rate=symbol_rate,
+                                            center_frequency=center_frequency, device=device, samples=samples,
+                                            sps_dsp=sps_dsp)
+
+    def map(self):
+        pass
+
+    def scatterplot(self, sps=1):
+        pass
+
+
+if __name__ == '__main__':
+    pass
