@@ -6,8 +6,6 @@ class SignalArray(object):
 
     def __init__(self,samples,device):
         self.samples = samples
-        to(self,device=device)
-
         self.device = device
 
     def __getitem__(self, item):
@@ -34,12 +32,12 @@ def to(signal, device):
     def to_():
         import cupy as cp
         if 'cuda' in device:
-            signal[:] = cp.asarray(signal[:], order='F')
+            signal.samples = cp.asarray(signal.samples, order='F')
             if hasattr(signal,'device'):
                 signal.device = device
             return signal
         if 'cpu' in device:
-            signal[:] = cp.asnumpy(signal[:], order='F')
+            signal.samples = cp.asnumpy(signal.samples, order='F')
             if hasattr(signal,'device'):
                 signal.device = device
             return signal
@@ -50,4 +48,3 @@ def to(signal, device):
         to_()
 
 
-normalize([1,2,3],'cuda')
