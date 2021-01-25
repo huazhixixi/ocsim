@@ -17,9 +17,7 @@ def device_selection(device):
                     return func(*args,**kwargs)
             else:
                 return func(*args,**kwargs)
-
             # return func(signal,*args,**kwargs)
-
         return real_func
 
     return inner

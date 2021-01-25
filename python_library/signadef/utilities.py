@@ -1,12 +1,12 @@
 from ..device_manager import device_selection
 
 
-
 class SignalArray(object):
 
     def __init__(self,samples,device):
         self.samples = samples
-        self.device = device
+        self.device = 'cpu'
+        to(self,device)
 
     def __getitem__(self, item):
         return self.samples[item]
@@ -14,14 +14,17 @@ class SignalArray(object):
     def __setitem__(self, key, value):
         self.samples[key] = value
 
-
-
-
 def normalize(signal, device):
 
     @device_selection(device)
     def normalize_():
-        signal[:] = signal[:]
+        if 'cuda' in device:
+            import cupy as eng
+        if 'cpu' in device:
+            import numpy as eng
+        else:
+            raise Exception('ERROR')
+        signal[:] = signal[:] / eng.sqrt(eng.mean(eng.abs(signal)**2,axis=0,keepdims=True))
 
     normalize_()
 
