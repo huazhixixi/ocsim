@@ -107,16 +107,16 @@ def map(data, encoding, M, dtype=np.complex128):
         1D array of complex symbol values. Normalised to energy of 1
     """
     data = np.atleast_2d(data)
-    nmodes = data.shape[1]
+    nmodes = data.shape[0]
     bitspsym = int(np.log2(M))
-    Nsym = data.shape[0] // bitspsym
+    Nsym = data.shape[1] // bitspsym
     # print(Nsym)
-    out = np.empty((Nsym,nmodes), dtype=dtype,order='F')
-    N = data.shape[0] - data.shape[0] % bitspsym
+    out = np.empty((nmodes, Nsym), dtype=dtype)
+    N = data.shape[1] - data.shape[1] % bitspsym
     # print(N)
     for i in range(nmodes):
         datab = bitarray()
-        datab.pack(data[:N, i].tobytes())
+        datab.pack(data[i, :N].tobytes())
         # the below is not really the fastest method but easy encoding/decoding is possible
-        out[:, i ] = np.frombuffer(b''.join(datab.decode(encoding)), dtype=dtype)
+        out[i, :] = np.frombuffer(b''.join(datab.decode(encoding)), dtype=dtype)
     return out
