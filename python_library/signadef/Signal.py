@@ -8,7 +8,6 @@ from .utilities import normalize
 from .utilities import to
 
 
-
 class Signal(object):
 
     def __init__(self,
@@ -33,13 +32,6 @@ class Signal(object):
 
     def ensure_sample_dim(self):
         self.engine.atleast_2d(self.samples)
-
-    @property
-    def device_number(self):
-        try:
-            return int(self.device.split(':')[-1])
-        except Exception:
-            return None
 
     def to(self, device):
         return to(self, self.device)
@@ -71,6 +63,7 @@ class QamSignal(Signal):
                  is_int=True,
                  pol_dim=2
                  ):
+
         self.qam_order = qam_order
         self.symbol_number = symbol_number
         self.sps_dsp = 2 if sps_dsp is None else sps_dsp
