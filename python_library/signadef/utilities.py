@@ -6,6 +6,8 @@ class SignalArray(object):
 
     def __init__(self,samples,device):
         self.samples = samples
+        to(self,device=device)
+
         self.device = device
 
     def __getitem__(self, item):

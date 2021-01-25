@@ -12,10 +12,11 @@ def device_selection(device):
     def inner(func):
         def real_func(*args, **kwargs):
             if 'cuda' in device:
-                print('gpu')
-                func(*args,**kwargs)
+                import cupy as cp
+                with cp.cuda.Device(cuda_number(device)):
+                    return func(*args,**kwargs)
             else:
-                print('cpu')
+                return func(*args,**kwargs)
 
             # return func(signal,*args,**kwargs)
 
