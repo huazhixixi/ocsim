@@ -22,7 +22,7 @@ def device_selection(device,provide_backend = False):
                 if not provide_backend:
                     return func(*args,**kwargs)
                 else:
-                    return func(provide_backend,*args,**kwargs)
+                    return func(np,*args,**kwargs)
             # return func(signal,*args,**kwargs)
         return real_func
 

@@ -43,18 +43,35 @@ class Signal(object):
             return signal
         make_sure_2d_(self)
 
-    def to(self, device):
 
-        @device_selection(device, provide_backend=True)
-        def to_(backend, signal_obj):
-            signal_obj.samples = backend.asarray(signal_obj.samples)
-            signal_obj.device = device
-            return signal_obj
+    def cuda(self,device):
 
+        @device_selection(device,True)
+        def cuda_(backend,signal):
+            signal.samples = backend.asarray(signal.samples)
+            signal.device = device
+            return signal
         if self.device == device:
             return self
+
         else:
-            return to_(self)
+            return cuda_(self)
+
+    def cpu(self, device):
+        if self.device == device:
+            return self
+
+        else:
+            self.samples = self.samples.get()
+            self.device = device
+            return self
+
+    def to(self, device):
+
+        if 'cuda' in device:
+            return self.cuda(device=device)
+        if 'cpu' in device:
+            return self.cpu(device=device)
 
     def normalize(self):
 
@@ -63,7 +80,6 @@ class Signal(object):
             factor = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1, keedims=True)
             signal_obj[:] = signal_obj[:] / backend.sqrt(factor)
             return signal_obj
-
         return normalize_(self)
 
     def __getitem__(self, item):
@@ -82,9 +98,9 @@ class Signal(object):
             print(f'{power_dbm[0]}:.4f dBm, {power[1]}:.4f dBm')
 
         power_(self)
+
     @property
     def shape(self):
-
         return self.samples.shape
 
 class QamSignal(Signal):

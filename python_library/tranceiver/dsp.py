@@ -86,11 +86,11 @@ def rrcos_freq(backend,f, beta, T):
 def pulseshaping(sig,beta):
     @device_selection(sig.device,True)
     def pulseshaping_(backend):
-        f = backend.fft.fftfreq(sig.nsymb * sig.sps_dsp) * sig.symbol_rate * sig.sps_dsp
-        nyq_fil = rrcos_freq(backend, f, beta, 0 / sig.symbol_rate)
+        f = backend.fft.fftfreq(sig.symbol_number * sig.sps_dsp) * sig.symbol_rate * sig.sps_dsp
+        nyq_fil = rrcos_freq(backend, f, beta, 1 / sig.symbol_rate)
         nyq_fil /= nyq_fil.max()
-        sig_f = backend.fft.fft(sig[:], axis=-2)
-        sig_out = backend.fft.ifft(sig_f * nyq_fil, axis=-2)
+        sig_f = backend.fft.fft(sig[:], axis=-1)
+        sig_out = backend.fft.ifft(sig_f * nyq_fil, axis=-1)
         sig.samples = sig_out
         sig.roll_off = beta
         return sig

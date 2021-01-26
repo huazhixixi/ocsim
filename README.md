@@ -54,6 +54,8 @@ Two classes are defined here:
 
     QamSignal: The class represents QamSignal
 
+    SignalSetting: define the paprameters of the class QamSignal
+
 define a QamSignal object
 
 ```python
