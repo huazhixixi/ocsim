@@ -8,10 +8,17 @@ function list:
     2. cuda_number
 
 
-a decorator is defined, if cuda is used, this function will perform operation on the correct device 
+a decorator device_selection is defined, if cuda is used, this function will perform operation on the correct device 
 
-Attenton:
-    signal is the Signal class or its child class defined in ```signadef/Signal.py```
+#### device_seltecion(device,provide_backend:bool)
+if a function is decortated by this decorator, args is a,b,c,d
+
+if provided_backend is True, the following is performed:
+
+    func(backend,a,b,c,d)
+
+The backend is set in the decorator, is device is 'cuda', the backend will be 
+set to cupy, and if device is 'cpu', the backend will be set to numpy
 
 Examples:
 ```python
@@ -19,10 +26,47 @@ Examples:
 from python_library import device_selection
 def normalize(signal,device):
     # define the real function
-    
-    @device_selection(device)
-    def normailize_():
+    @device_selection(device,provide_backend=True)
+    # real_func(*args,**kwargs)
+    # if provid_backend:
+    #   func(backend,*args,**kwargs)
+    # else:
+    #   func(*args,**kwargs)
+    def normailize_(backend,args):
         # do sth to signal
-        return signal
+        return 2
     
-    normailize_()
+    normailize_(1)  # real_func(1)----> normailize(backend,1)
+```
+## core dir:
+    1. constl.py
+    2. Signal.py
+
+### constl.py
+#TO BE ADDED
+
+### Signal.py
+Two classes are defined here:
+    
+    Signal: The baseclass of all Signal
+
+    QamSignal: The class represents QamSignal
+
+define a QamSignal object
+
+```python
+from python_library import QamSignal,SignalSetting
+
+signal_setting = SignalSetting (
+                                   center_freq=193.1e12,sps_in_fiber=4,
+                                   device='cuda:0',symbol_rate=35e9,
+                                   sps_dsp=2     
+                               )
+
+signal = QamSignal(signal_setting=signal_setting)
+
+signal.normalize()  # inplace normalize the signal
+signal.to('cuda:1') # Move signal to NVIDIA GRAPHIC CARD
+signal.power()      # print the signal power in W and dBm
+
+```

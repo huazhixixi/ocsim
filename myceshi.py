@@ -1,8 +1,31 @@
-from python_library import Signal
-import numpy as np
+
+from python_library import QamSignal,SignalSetting
+class Simulator:
+
+    def __init__(self,config_json):
+        import json
+
+        with open(config_json) as config_json:
+            config = json.load(config_json)
+
+        signal_setting = config['signal_setting']
+
+        signal = QamSignal(signal_setting=signal_setting)
 
 
+    def config_link(self):
+        pass
+
+    def generate_signal(self):
+        pass
+
+    def simulation(self):
+        pass
+
+    def config_receiver(self):
+        pass
+
+    def save_signal(self):
+        pass
 
 
-signal = Signal(np.array([1,2,3]),device='cuda:0',center_freq=193.1e12,sps_in_fiber=4)
-signal.normalize()

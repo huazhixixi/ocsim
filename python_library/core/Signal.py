@@ -34,6 +34,14 @@ class Signal(object):
         self.device = 'cpu'
 
         self.to(device)
+        self.make_sure_2d()
+
+    def make_sure_2d(self):
+        @device_selection(self.device,True)
+        def make_sure_2d_(backend,signal):
+            signal.samples = backend.atleast_2d(signal.samples)
+            return signal
+        make_sure_2d_(self)
 
     def to(self, device):
 
@@ -74,13 +82,14 @@ class Signal(object):
             print(f'{power_dbm[0]}:.4f dBm, {power[1]}:.4f dBm')
 
         power_(self)
+    @property
+    def shape(self):
 
+        return self.samples.shape
 
 class QamSignal(Signal):
 
     def __init__(self,
-                 symbol_rate,
-                 qam_order,
                  signal_setting: SignalSetting
                  ):
         import numpy as np
@@ -91,13 +100,13 @@ class QamSignal(Signal):
         self.pol_number = signal_setting.pol_number
 
         if signal_setting.need_init:
-            self.nbits = self.symbol_number * np.log2(qam_order)
-            self.bit_sequence = np.random.randint(0, 2, (self.pol_number, self.nbits), dtype=bool)
+            self.nbits = self.symbol_number * np.log2(self.qam_order)
+            self.bit_sequence = np.random.randint(0, 2, (self.pol_number, int(self.nbits)), dtype=bool)
             self.constl = cal_symbols_qam(self.qam_order) / np.sqrt(cal_scaling_factor_qam(self.qam_order))
             self.symbol = None
             self.map()
-            samples = np.zeros_like((self.pol_number, self.symbol_number * self.sps_dsp), dtype=np.complex)
-            samples[:, ::self.sps_dsp] = self.symbol
+            samples = np.zeros(shape = (self.pol_number, self.symbol_number * signal_setting.sps_dsp), dtype=np.complex)
+            samples[:, ::signal_setting.sps_dsp] = self.symbol
             super(QamSignal, self).__init__(samples=samples, center_freq=signal_setting.center_freq,
                                             sps_in_fiber=signal_setting.sps_in_fiber, sps_dsp=signal_setting.sps_dsp,
                                             device=signal_setting.device)
