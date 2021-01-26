@@ -1,6 +1,8 @@
 # device_manager
 
-##device.py 
+##device_manager dir 
+
+### device.py
 
 function list:
     
@@ -70,3 +72,18 @@ signal.to('cuda:1') # Move signal to NVIDIA GRAPHIC CARD
 signal.power()      # print the signal power in W and dBm
 
 ```
+## Tranceiver dir
+### dsp.py
+Define the function at Tx and Rx
+
+Tx: rrc pulse shaping 
+
+Rx: CDC, matched_filter, LMS_PLL and superscalaer
+### instruments.py
+Define the electrical and optical instruments, at current state, Laser and Mux are implemented
+
+### numba_backend.py
+
+Define the low-level lms_pll function using numba LLVM compiler to speed up
+
+#### TODO: implement the CPP backend for LMS_PLL
