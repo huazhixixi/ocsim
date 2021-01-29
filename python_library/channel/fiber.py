@@ -57,8 +57,7 @@ class NonlinearFiber(object):
         self.backend = backend
 
     def prop(self,signal):
-        # signal.samples = self.backend.asarray(signal.samples,dtype = self.backend.complex64)
-        # signal.dtype = self.backend.complex64
+
         wave_length = c/signal.center_freq
         nstep = self.length / self.step_length
         nstep = int(self.backend.floor(nstep))
