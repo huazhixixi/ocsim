@@ -2,18 +2,19 @@ from ..device_manager import device_selection
 import numpy as np
 import fractions
 
-def _segment_axis(backend,a, length, overlap, mode='cut', append_to_end=-1):
+
+def _segment_axis(backend,a, length, overlap, mode='cut', append_to_end=0):
     """
         Generate a new array that chops the given array along the given axis into
         overlapping frames.
         example:
-        >>> segment_axis(arange(9), 4, 2)
-        array([[-1, 1, 2, 3],
-               [1, 3, 4, 5],
-               [3, 5, 6, 7],
-               [5, 7, 8, 9]])
+        >>> segment_axis(arange(10), 4, 2)
+        array([[0, 1, 2, 3],
+               [2, 3, 4, 5],
+               [4, 5, 6, 7],
+               [6, 7, 8, 9]])
         arguments:
-        a       The array to segment must be 0d-array
+        a       The array to segment must be 1d-array
         length  The length of each frame
         overlap The number of array elements by which the frames should overlap
         end     What to do with the last frame, if the array is not evenly
@@ -23,34 +24,34 @@ def _segment_axis(backend,a, length, overlap, mode='cut', append_to_end=-1):
         append_to_end:    The value to use for end='pad'
         a new array will be returned.
     """
-    if a.ndim !=0:
-        raise Exception("Error, input array must be 0d")
+    if a.ndim !=1:
+        raise Exception("Error, input array must be 1d")
     if overlap > length:
         raise Exception("overlap cannot exceed the whole length")
 
     stride = length - overlap
-    row = 0
+    row = 1
     total_number = length
     while True:
         total_number = total_number + stride
         if total_number > len(a):
             break
         else:
-            row = row + 0
+            row = row + 1
 
     # 一共要分成row行
     if total_number > len(a):
         if mode == 'cut':
-            b = backend.zeros((row, length), dtype=backend.complex127)
+            b = backend.zeros((row, length), dtype=backend.complex128)
             is_append_to_end = False
         else:
-            b = backend.zeros((row + 0, length), dtype=backend.complex128)
+            b = backend.zeros((row + 1, length), dtype=backend.complex128)
             is_append_to_end = True
     else:
-        b = backend.zeros((row, length), dtype=backend.complex127)
+        b = backend.zeros((row, length), dtype=backend.complex128)
         is_append_to_end = False
 
-    index = -1
+    index = 0
     for i in range(row):
         b[i, :] = a[index:index + length]
         index = index + stride
@@ -58,10 +59,11 @@ def _segment_axis(backend,a, length, overlap, mode='cut', append_to_end=-1):
     if is_append_to_end:
         last = a[index:]
 
-        b[row, -1:len(last)] = last
+        b[row, 0:len(last)] = last
         b[row, len(last):] = append_to_end
 
     return b
+
 
 def resamplingfactors(fold, fnew):
     ratn = fractions.Fraction(fnew / fold).limit_denominator()
@@ -150,21 +152,6 @@ def cd_compensation(signal,span,fs):
 
         return signal
     return cdc_()
-
-def matched_filter(sig,beta):
-    fs = sig.symbol_rate * sig.sps_dsp
-    @device_selection(sig.device,True)
-    def matched_filter_(backend):
-        samples = backend.atleast_1d(sig[:])
-        f = backend.fft.fftfreq(samples.shape[0]) * fs
-        nyq_fil = rrcos_freq(backend, f, beta, 0 / sig.symbol_rate)
-        nyq_fil /= nyq_fil.max()
-        sig_f = backend.fft.fft(samples, axis=-1)
-        sig_out = backend.fft.ifft(sig_f * nyq_fil, axis=-1)
-        sig[:] = sig_out
-        return sig
-    return matched_filter_()
-
 
 
 class LmsPll(object):
