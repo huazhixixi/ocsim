@@ -100,35 +100,17 @@ def pulseshaping(sig,beta):
 
 
 def ideal_dac(signal,old_sps,new_sps):
-    up, down = resamplingfactors(old_sps, new_sps)
+    '''
+        At current stage, only cpu is supported
+    '''
+    import resampy
     @device_selection(signal.device,True)
     def ideal_dac_(backend):
-        if 'cuda' in signal.device:
-            from cusignal import resample_poly
-        elif 'cpu' in signal.device:
-            from scipy.signal import resample_poly
-        else:
-            raise Exception("Device Error")
-        signal.samples = resample_poly(signal[:], up, down, axis=-1)
-
+        assert signal.device == 'cpu'
+        signal.samples = resampy.resample(signal.samples,old_sps,new_sps)
         return signal
     return ideal_dac_()
-######################################################################################################################
-#
-# from scipy.constants import c
-# center_wavelength = c/signal.center_frequency
-# freq_vector = self.backend.fft.fftfreq(len(signal[0]), 1 / signal.fs)
-# omeg_vector = 2 * self.backend.pi * freq_vector
-# if not isinstance(self.span, list):
-#     self.span = [self.span]
-#
-# for span in self.span:
-#     beta2 = -span.beta2(center_wavelength)
-#     dispersion = (-1j / 2) * beta2 * omeg_vector ** 2 * span.length
-#     for row in signal[:]:
-#         row[:] = self.backend.fft.ifft(self.backend.fft.fft(row) * self.backend.exp(dispersion))
-#
-# return signal
+
 
 
 
@@ -238,11 +220,11 @@ class Superscalar:
         res = []
         res_symbol = []
         for row in signal[:]:
-            row = _segment_axis(row, self.block_length, 0)
+            row = _segment_axis(np,row, self.block_length, 0)
             res.append(row)
 
         for row in signal.symbol:
-            row = _segment_axis(row, self.block_length, 0)
+            row = _segment_axis(np,row, self.block_length, 0)
             res_symbol.append(row)
 
         for idx in range(len(res)):
