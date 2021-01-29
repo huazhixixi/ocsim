@@ -23,21 +23,24 @@ The backend is set in the decorator, is device is 'cuda', the backend will be
 set to cupy, and if device is 'cpu', the backend will be set to numpy
 
 Examples:
+
 ```python
 
-from python_library import device_selection
-def normalize(signal,device):
+from ocsim import device_selection
+
+
+def normalize(signal, device):
     # define the real function
-    @device_selection(device,provide_backend=True)
+    @device_selection(device, provide_backend=True)
     # real_func(*args,**kwargs)
     # if provid_backend:
     #   func(backend,*args,**kwargs)
     # else:
     #   func(*args,**kwargs)
-    def normailize_(backend,args):
+    def normailize_(backend, args):
         # do sth to signal
         return 2
-    
+
     normailize_(1)  # real_func(1)----> normailize(backend,1)
 ```
 ## core dir:
@@ -59,19 +62,19 @@ Two classes are defined here:
 define a QamSignal object
 
 ```python
-from python_library import QamSignal,SignalSetting
+from ocsim import QamSignal, SignalSetting
 
-signal_setting = SignalSetting (
-                                   center_freq=193.1e12,sps_in_fiber=4,
-                                   device='cuda:0',symbol_rate=35e9,
-                                   sps_dsp=2     
-                               )
+signal_setting = SignalSetting(
+    center_freq=193.1e12, sps_in_fiber=4,
+    device='cuda:0', symbol_rate=35e9,
+    sps_dsp=2
+)
 
 signal = QamSignal(signal_setting=signal_setting)
 
 signal.normalize()  # inplace normalize the signal
-signal.to('cuda:1') # Move signal to NVIDIA GRAPHIC CARD
-signal.power()      # print the signal power in W and dBm
+signal.to('cuda:1')  # Move signal to NVIDIA GRAPHIC CARD
+signal.power()  # print the signal power in W and dBm
 
 ```
 ## Tranceiver dir

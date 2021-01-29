@@ -1,8 +1,8 @@
 #%%
-from python_library import QamSignal
-from python_library import pulseshaping
-from python_library import ideal_dac
-from python_library import SignalSetting
+from ocsim import QamSignal
+from ocsim import pulseshaping
+from ocsim import ideal_dac
+from ocsim import SignalSetting
 import numpy as np
 import cupy as cp
 np.random.seed(0)
@@ -37,14 +37,14 @@ signal_cuda[:] = np.sqrt(1/1000/2) * signal_cuda[:]
 signal.to('cuda')
 signal_cuda.to('cuda')
 
-from python_library import FiberSetting,prop
+from ocsim import FiberSetting,prop
 
 signal = prop(signal,FiberSetting(step_length=20/1000))
 signal_cuda = prop(signal_cuda,FiberSetting(step_length=20/1000))
 
 # %%
 signal.to('cpu')
-from python_library import cd_compensation
+from ocsim import cd_compensation
 
 signal = cd_compensation(signal,FiberSetting(length=80),signal.symbol_rate*signal.sps_in_fiber)
 # %%
@@ -57,6 +57,6 @@ signal = ideal_dac(signal,signal.sps_in_fiber,signal.sps_dsp)
 signal = pulseshaping(signal,0.02)
 # %%
 
-from python_library.utilities import scatterplot
+from ocsim.utilities import scatterplot
 signal.normalize()
 scatterplot(signal,2)
