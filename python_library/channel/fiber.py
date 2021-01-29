@@ -62,7 +62,7 @@ class NonlinearFiber(object):
         wave_length = c/signal.center_freq
         nstep = self.length / self.step_length
         nstep = int(self.backend.floor(nstep))
-        freq = self.backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
+        freq = self.backend.fft.fftfreq(signal.shape[1], 1 / signal.symbol_rate/signal.sps_in_fiber)
         freq = self.backend.asarray(freq,dtype = signal.dtype)
         omeg = 2 * self.backend.pi * freq
         D = -1j / 2 * self.setting.beta2(wave_length) * omeg ** 2
@@ -122,14 +122,14 @@ class NonlinearFiber(object):
 
     def linear_prop(self, D, timex, timey, length):
 
-        freq_x = self.fft_backend.fft.fft(timex,overwrite_x = True)
-        freq_y = self.fft_backend.fft.fft(timey,overwrite_x = True)
+        freq_x = self.fft_backend.fft.fft(timex)
+        freq_y = self.fft_backend.fft.fft(timey)
 
         freq_x = freq_x * self.backend.exp(D * length)
         freq_y = freq_y * self.backend.exp(D * length)
 
-        time_x = self.fft_backend.fft.ifft(freq_x,overwrite_x=True)
-        time_y = self.fft_backend.fft.ifft(freq_y,overwrite_x=True)
+        time_x = self.fft_backend.fft.ifft(freq_x)
+        time_y = self.fft_backend.fft.ifft(freq_y)
         return time_x, time_y
 
 
@@ -139,7 +139,7 @@ def prop(signal,fiber_setting):
     @device_selection(signal.device,True)
     def prop_(backend):
 
-        fiber = NonlinearFiber(fiber_setting,backend.fft,backend)
+        fiber = NonlinearFiber(fiber_setting,backend,backend)
         return fiber.prop(signal=signal)
 
     return prop_()

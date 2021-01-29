@@ -72,12 +72,15 @@ class Signal(object):
             return self.cuda(device=device)
         if 'cpu' in device:
             return self.cpu(device=device)
+    @property
+    def dtype(self):
+        return self.samples.dtype
 
     def normalize(self):
 
         @device_selection(self.device, provide_backend=True)
         def normalize_(backend, signal_obj):
-            factor = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1, keedims=True)
+            factor = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1, keepdims=True)
             signal_obj[:] = signal_obj[:] / backend.sqrt(factor)
             return signal_obj
         return normalize_(self)
@@ -89,19 +92,34 @@ class Signal(object):
         self.samples[key] = value
 
     def power(self):
+        import numpy as np
         @device_selection(self.device, True)
         def power_(backend, signal_obj):
-            power = backend.mean(backend.abs(signal_obj) ** 2, axis=-1)
+            power = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1)
             power_dbm = 10 * backend.log10(power * 1000)
-
-            print(f'{power[0]}:.4f W, {power[1]}:.4f W')
-            print(f'{power_dbm[0]}:.4f dBm, {power[1]}:.4f dBm')
-
+            try:
+                power = power.get()
+                power_dbm = power_dbm.get()
+            except AttributeError:
+                pass
+            # print(f'xpol:{power[0]:.4}W, ypol:{power[1]:.4} W')
+            # print(f'xpol:{power_dbm[0]:.4} dBm, ypol:{power_dbm[1]:.4} dBm')
+            print(f'total:{10*np.log10(1000*power.sum()):.4} dBm')
         power_(self)
 
     @property
     def shape(self):
         return self.samples.shape
+
+    def float(self):
+        @device_selection(self.device,True)
+        def float_(backend,signal_obj):
+            signal_obj.samples = backend.asarray(signal_obj.samples,dtype=backend.complex64)
+            return signal_obj
+
+        return  float_(self)
+
+
 
 class QamSignal(Signal):
 
