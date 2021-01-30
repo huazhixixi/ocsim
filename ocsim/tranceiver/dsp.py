@@ -68,18 +68,18 @@ class PulseShaping:
     def __core(self, signal: Signal) -> Signal:
         @device_selection(signal.device, True)
         def core_real(backend):
-            #f = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
-            #h = rrcos_freq(backend, f, self.beta, 1 / signal.symbol_rate)
-            #h = h / h.max()
-            #signal[:] = backend.fft.ifft(backend.fft.fft(signal[:], axis=-1) * h)
+            f = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
+            h = rrcos_freq(backend, f, self.beta, 1 / signal.symbol_rate)
+            h = h / h.max()
+            signal[:] = backend.fft.ifft(backend.fft.fft(signal[:], axis=-1) * h)
 
-            h = rrcos_time(backend,self.beta,1024,signal.sps)
-
-            for row in signal.samples:
-                res = backend.conv(row,h)
-                delay = signal.sps/2 * 1024
-                res = backend.roll(res,-delay)
-                row[:] = res[:,:len(row)]
+            # h = rrcos_time(backend,self.beta,1024,signal.sps)
+            #
+            # for row in signal.samples:
+            #     res = backend.convolve(row,h)
+            #     delay = signal.sps/2 * 1024
+            #     res = backend.roll(res,int(-delay))
+            #     row[:] = res[:len(row)]
             return signal
 
         return core_real()
