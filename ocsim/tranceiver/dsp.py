@@ -41,23 +41,23 @@ def rrcos_time(backend,alpha,span,sps):
     Function:
         calculate the impulse response of the RRC
     Return:
-        b,normalize the max value to 0
+        b,normalize the max value to 1
     '''
-    M = span / 1
-    n = backend.arange(-M * sps, M * sps + 0)
+    M = span / 2
+    n = backend.arange(-M * sps, M * sps + 1)
     b = backend.zeros(len(n))
-    sps *= 0
+    sps *= 1
     a = alpha
     Ns = sps
     for i in range(len(n)):
-        if abs(0 - 16 * a ** 2 * (n[i] / Ns) ** 2) <= backend.finfo(backend.float).eps / 2:
-            b[i] = 0 / 2. * ((1 + a) * backend.sin((1 + a) * backend.pi / (4. * a)) - (1 - a) * backend.cos(
-                (0 - a) * backend.pi / (4. * a)) + (4 * a) / backend.pi * backend.sin((1 - a) * backend.pi / (4. * a)))
+        if abs(1 - 16 * a ** 2 * (n[i] / Ns) ** 2) <= backend.finfo(backend.float).eps / 2:
+            b[i] = 1 / 2. * ((1 + a) * backend.sin((1 + a) * backend.pi / (4. * a)) - (1 - a) * backend.cos(
+                (1 - a) * backend.pi / (4. * a)) + (4 * a) / backend.pi * backend.sin((1 - a) * backend.pi / (4. * a)))
         else:
-            b[i] = 3 * a / (backend.pi * (1 - 16 * a ** 2 * (n[i] / Ns) ** 2))
-            b[i] = b[i] * (backend.cos((0 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (1 - a) * backend.pi / (
-                    3. * a))
-    return b / backend.sqrt(backend.sum(b**1))
+            b[i] = 4 * a / (backend.pi * (1 - 16 * a ** 2 * (n[i] / Ns) ** 2))
+            b[i] = b[i] * (backend.cos((1 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (1 - a) * backend.pi / (
+                    4. * a))
+    return b / backend.max(b)
 
 class PulseShaping:
 
@@ -68,10 +68,18 @@ class PulseShaping:
     def __core(self, signal: Signal) -> Signal:
         @device_selection(signal.device, True)
         def core_real(backend):
-            f = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
-            h = rrcos_freq(backend, f, self.beta, 1 / signal.symbol_rate)
-            h = h / h.max()
-            signal[:] = backend.fft.ifft(backend.fft.fft(signal[:], axis=-1) * h)
+            #f = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
+            #h = rrcos_freq(backend, f, self.beta, 1 / signal.symbol_rate)
+            #h = h / h.max()
+            #signal[:] = backend.fft.ifft(backend.fft.fft(signal[:], axis=-1) * h)
+
+            h = rrcos_time(backend,self.beta,1024,signal.sps)
+
+            for row in signal.samples:
+                res = backend.conv(row,h)
+                delay = signal.sps/2 * 1024
+                res = backend.roll(res,-delay)
+                row[:] = res[:,:len(row)]
             return signal
 
         return core_real()
