@@ -5,10 +5,8 @@ from dataclasses import dataclass
 @dataclass
 class SignalSetting:
     center_freq: float
-    sps_in_fiber: int
-    sps_dsp: int = 2
+    sps: int = 2
     device: str = 'cpu'
-
     #####QAM Signal###
     symbol_rate: float = 35e9
     symbol_number: int = 65536
@@ -22,67 +20,60 @@ class Signal(object):
     def __init__(self,
                  samples,
                  center_freq,
-                 sps_in_fiber,
-                 sps_dsp=2,
+                 sps=2,
                  device='cpu'
                  ):
 
         self.samples = samples
         self.center_freq = center_freq
-        self.sps_in_fiber = sps_in_fiber
-        self.sps_dsp = sps_dsp
+        self.sps = sps
         self.device = 'cpu'
-
         self.to(device)
         self.make_sure_2d()
 
     def make_sure_2d(self):
-        @device_selection(self.device,True)
-        def make_sure_2d_(backend,signal):
+        @device_selection(self.device, True)
+        def make_sure_2d_(backend, signal):
             signal.samples = backend.atleast_2d(signal.samples)
             return signal
+
         make_sure_2d_(self)
 
-
-    def cuda(self,device):
-
-        @device_selection(device,True)
-        def cuda_(backend,signal):
-            signal.samples = backend.asarray(signal.samples)
-            signal.device = device
-            return signal
-        if self.device == device:
-            return self
-
-        else:
-            return cuda_(self)
+    def cuda(self, device):
+        if device == self.device:
+            return
+        import cupy as cp
+        from ..device_manager import cuda_number
+        with cp.cuda.Device(cuda_number(device)):
+            self.samples = cp.asarray(self.samples)
+        self.device = device
+        return self
 
     def cpu(self, device):
         if self.device == device:
             return self
-
         else:
             self.samples = self.samples.get()
             self.device = device
             return self
 
     def to(self, device):
-
         if 'cuda' in device:
             return self.cuda(device=device)
         if 'cpu' in device:
             return self.cpu(device=device)
+
     @property
     def dtype(self):
         return self.samples.dtype
 
     def normalize(self):
-
         @device_selection(self.device, provide_backend=True)
         def normalize_(backend, signal_obj):
             factor = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1, keepdims=True)
             signal_obj[:] = signal_obj[:] / backend.sqrt(factor)
             return signal_obj
+
         return normalize_(self)
 
     def __getitem__(self, item):
@@ -104,7 +95,8 @@ class Signal(object):
                 pass
             # print(f'xpol:{power[0]:.4}W, ypol:{power[1]:.4} W')
             # print(f'xpol:{power_dbm[0]:.4} dBm, ypol:{power_dbm[1]:.4} dBm')
-            print(f'total:{10*np.log10(1000*power.sum()):.4} dBm')
+            print(f'total:{10 * np.log10(1000 * power.sum()):.4} dBm')
+
         power_(self)
 
     @property
@@ -112,13 +104,16 @@ class Signal(object):
         return self.samples.shape
 
     def float(self):
-        @device_selection(self.device,True)
-        def float_(backend,signal_obj):
-            signal_obj.samples = backend.asarray(signal_obj.samples,dtype=backend.complex64)
+        @device_selection(self.device, True)
+        def float_(backend, signal_obj):
+            signal_obj.samples = backend.asarray(signal_obj.samples, dtype=backend.complex64)
             return signal_obj
 
-        return  float_(self)
+        return float_(self)
 
+    @property
+    def fs(self):
+        return self.symbol_rate * self.sps
 
 
 class QamSignal(Signal):
@@ -139,10 +134,10 @@ class QamSignal(Signal):
             self.constl = cal_symbols_qam(self.qam_order) / np.sqrt(cal_scaling_factor_qam(self.qam_order))
             self.symbol = None
             self.map()
-            samples = np.zeros(shape = (self.pol_number, self.symbol_number * signal_setting.sps_dsp), dtype=np.complex)
-            samples[:, ::signal_setting.sps_dsp] = self.symbol
+            samples = np.zeros(shape=(self.pol_number, self.symbol_number * signal_setting.sps), dtype=np.complex)
+            samples[:, ::signal_setting.sps] = self.symbol
             super(QamSignal, self).__init__(samples=samples, center_freq=signal_setting.center_freq,
-                                            sps_in_fiber=signal_setting.sps_in_fiber, sps_dsp=signal_setting.sps_dsp,
+                                            sps=signal_setting.sps,
                                             device=signal_setting.device)
 
     def map(self):
@@ -150,15 +145,13 @@ class QamSignal(Signal):
         _, encoding = generate_mapping(self.qam_order)
         self.symbol = map(self.bit_sequence, encoding=encoding, M=self.qam_order)
 
-
 class WdmSignal(Signal):
 
-    def __init__(self, symbols, samples, freqes, center_freq, sps_in_fiber, sps_dsp, device):
+    def __init__(self, symbols, samples, freqes, center_freq,  sps, device):
         import numpy as np
         self.symbols = symbols
         self.freq = freqes
         self.relative_freq = np.array(self.freq) - center_freq
-        super(WdmSignal, self).__init__(samples=samples, center_freq=center_freq, sps_in_fiber=sps_in_fiber,
-                                        sps_dsp=sps_dsp, device=device)
-
+        super(WdmSignal, self).__init__(samples=samples, center_freq=center_freq,
+                                        sps=sps, device=device)
 
