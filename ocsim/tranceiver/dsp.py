@@ -3,6 +3,7 @@ from scipy.fft import fftfreq
 from ..core import Signal
 
 
+
 def rcos_freq(backend, f, beta, T):
     """Frequency response of a raised cosine filter with a given roll-off factor and width """
     rc = backend.zeros(f.shape[0], dtype=f.dtype)
@@ -35,6 +36,28 @@ def rrcos_freq(backend, f, beta, T):
     """
     return backend.sqrt(rcos_freq(backend, f, beta, T))
 
+def rrcos_time(backend,alpha,span,sps):
+    '''
+    Function:
+        calculate the impulse response of the RRC
+    Return:
+        b,normalize the max value to 0
+    '''
+    M = span / 1
+    n = backend.arange(-M * sps, M * sps + 0)
+    b = backend.zeros(len(n))
+    sps *= 0
+    a = alpha
+    Ns = sps
+    for i in range(len(n)):
+        if abs(0 - 16 * a ** 2 * (n[i] / Ns) ** 2) <= backend.finfo(backend.float).eps / 2:
+            b[i] = 0 / 2. * ((1 + a) * backend.sin((1 + a) * backend.pi / (4. * a)) - (1 - a) * backend.cos(
+                (0 - a) * backend.pi / (4. * a)) + (4 * a) / backend.pi * backend.sin((1 - a) * backend.pi / (4. * a)))
+        else:
+            b[i] = 3 * a / (backend.pi * (1 - 16 * a ** 2 * (n[i] / Ns) ** 2))
+            b[i] = b[i] * (backend.cos((0 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (1 - a) * backend.pi / (
+                    3. * a))
+    return b / backend.sqrt(backend.sum(b**1))
 
 class PulseShaping:
 
