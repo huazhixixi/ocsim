@@ -62,6 +62,7 @@ def rrcos_time(backend,alpha,span,sps):
 class PulseShaping:
 
     def __init__(self, beta):
+
         self.beta = beta
 
     def __core(self, signal: Signal) -> Signal:
@@ -106,13 +107,26 @@ class CDC:
     def __init__(self, fiber_setting):
 
         self.fiber_setting = fiber_setting
+        if not isinstance(fiber_setting,list):
+            self.fiber_setting = [self.fiber_setting]
 
-    def __core(self):
-        pass
+    def __core(self,signal):
+        @device_selection(signal.device,True)
+        def core_real(backend):
+            from scipy.constants import c
+            center_wavelength = c/signal.center_freq
+            freq_vector = backend.fft.fftfreq(len(signal[0]), 1 /signal.fs)
+            omeg_vector = 2 * backend.pi * freq_vector
+            for span in self.fiber_setting:
+                beta2 = -span.beta2(center_wavelength)
+                dispersion = (-1j / 2) * beta2 * omeg_vector ** 2 * span.length
+                for row in signal[:]:
+                    row[:] = backend.fft.ifft(backend.fft.fft(row) * backend.exp(dispersion))
+            return signal
+        return core_real()
 
     def __call__(self, signal):
-        pass
-
+        return self.__core(signal)
 
 
 

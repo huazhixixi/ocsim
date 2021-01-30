@@ -70,7 +70,7 @@ class NonlinearFiber:
         def prop_(backend):
             nstep = self.setting.length / self.setting.step_length
             nstep = int(np.floor(nstep))
-            freq = backend.fftfreq(signal.shape[1], 1 / signal.fs)
+            freq = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
             omeg = 2 * backend.pi * freq
             self.D = -1j / 2 * self.setting.beta2(c/signal.center_freq) * omeg ** 2
             N = 8 / 9 * 1j * self.setting.gamma
@@ -121,12 +121,15 @@ class NonlinearFiber:
 
     def linear_prop(self, backend, timex, timey, length):
         D = self.D
-        freq_x = backend.fft(timex)
-        freq_y = backend.fft(timey)
+        freq_x = backend.fft.fft(timex)
+        freq_y = backend.fft.fft(timey)
 
         freq_x = freq_x * backend.exp(D * length)
         freq_y = freq_y * backend.exp(D * length)
 
-        time_x = backend.ifft(freq_x)
-        time_y = backend.ifft(freq_y)
+        time_x = backend.fft.ifft(freq_x)
+        time_y = backend.fft.ifft(freq_y)
         return time_x, time_y
+    
+    def __call__(self,signal):
+        return self.prop(signal)
