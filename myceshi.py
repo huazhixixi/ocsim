@@ -18,7 +18,10 @@ for power in range(5):
     signal.normalize()
     signal[:] = np.sqrt(10 ** (power / 10) / 1000 / 2) * signal[:]
     for i in range(3):
+        import  time
+        now = time.time()
         signal = fiber(signal)
+        print(time.time()-now)
         signal[:] = np.sqrt(10 ** (16 / 10)) * signal[:]
     from ocsim import CDC
 
