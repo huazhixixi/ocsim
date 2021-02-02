@@ -1,7 +1,12 @@
 from ..device_manager import device_selection
 from scipy.fft import fftfreq
 from ..core import Signal
+import fractions
 
+
+def resamplingfactors(fold, fnew):
+    ratn = fractions.Fraction(fnew / fold).limit_denominator()
+    return ratn.numerator, ratn.denominator
 
 
 def rcos_freq(backend, f, beta, T):
@@ -36,13 +41,15 @@ def rrcos_freq(backend, f, beta, T):
     """
     return backend.sqrt(rcos_freq(backend, f, beta, T))
 
-def rrcos_time(backend,alpha,span,sps):
+
+def rrcos_time(backend, alpha, span, sps):
     '''
     Function:
         calculate the impulse response of the RRC
     Return:
         b,normalize the max value to 1
     '''
+    assert divmod(span * sps, 2)[1] == 0
     M = span / 2
     n = backend.arange(-M * sps, M * sps + 1)
     b = backend.zeros(len(n))
@@ -55,14 +62,15 @@ def rrcos_time(backend,alpha,span,sps):
                 (1 - a) * backend.pi / (4. * a)) + (4 * a) / backend.pi * backend.sin((1 - a) * backend.pi / (4. * a)))
         else:
             b[i] = 4 * a / (backend.pi * (1 - 16 * a ** 2 * (n[i] / Ns) ** 2))
-            b[i] = b[i] * (backend.cos((1 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (1 - a) * backend.pi / (
-                    4. * a))
-    return b / backend.max(b)
+            b[i] = b[i] * (backend.cos((1 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (
+                        1 - a) * backend.pi / (
+                                   4. * a))
+    return b / backend.sqrt(backend.sum(backend.abs(b) ** 2))
+
 
 class PulseShaping:
 
     def __init__(self, beta):
-
         self.beta = beta
 
     def __core(self, signal: Signal) -> Signal:
@@ -72,14 +80,6 @@ class PulseShaping:
             h = rrcos_freq(backend, f, self.beta, 1 / signal.symbol_rate)
             h = h / h.max()
             signal[:] = backend.fft.ifft(backend.fft.fft(signal[:], axis=-1) * h)
-
-            # h = rrcos_time(backend,self.beta,1024,signal.sps)
-            #
-            # for row in signal.samples:
-            #     res = backend.convolve(row,h)
-            #     delay = signal.sps/2 * 1024
-            #     res = backend.roll(res,int(-delay))
-            #     row[:] = res[:len(row)]
             return signal
 
         return core_real()
@@ -98,7 +98,12 @@ class IdealResampler:
         @device_selection(signal.device, True)
         def core_real(backend):
             if 'cuda' in signal.device:
-                raise NotImplementedError
+                import resampy
+                signal.to('cpu')
+                signal.samples = resampy.resample(signal[:], self.old_sps, self.new_sps, filter="kaiser_best")
+                signal.sps = self.new_sps
+                signal.to('cuda')
+                return signal
             import resampy
             signal.samples = resampy.resample(signal[:], self.old_sps, self.new_sps, filter="kaiser_best")
             signal.sps = self.new_sps
@@ -115,15 +120,15 @@ class CDC:
     def __init__(self, fiber_setting):
 
         self.fiber_setting = fiber_setting
-        if not isinstance(fiber_setting,list):
+        if not isinstance(fiber_setting, list):
             self.fiber_setting = [self.fiber_setting]
 
-    def __core(self,signal):
-        @device_selection(signal.device,True)
+    def __core(self, signal):
+        @device_selection(signal.device, True)
         def core_real(backend):
             from scipy.constants import c
-            center_wavelength = c/signal.center_freq
-            freq_vector = backend.fft.fftfreq(len(signal[0]), 1 /signal.fs)
+            center_wavelength = c / signal.center_freq
+            freq_vector = backend.fft.fftfreq(len(signal[0]), 1 / signal.fs)
             omeg_vector = 2 * backend.pi * freq_vector
             for span in self.fiber_setting:
                 beta2 = -span.beta2(center_wavelength)
@@ -131,11 +136,8 @@ class CDC:
                 for row in signal[:]:
                     row[:] = backend.fft.ifft(backend.fft.fft(row) * backend.exp(dispersion))
             return signal
+
         return core_real()
 
     def __call__(self, signal):
         return self.__core(signal)
-
-
-
-

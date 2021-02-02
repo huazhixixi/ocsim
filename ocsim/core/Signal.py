@@ -119,7 +119,9 @@ class Signal(object):
 class QamSignal(Signal):
 
     def __init__(self,
-                 signal_setting: SignalSetting
+                 signal_setting: SignalSetting,
+                 samples = None,
+                 symbol = None
                  ):
         import numpy as np
         from .constl import cal_symbols_qam, cal_scaling_factor_qam
@@ -127,15 +129,22 @@ class QamSignal(Signal):
         self.symbol_number = signal_setting.symbol_number
         self.qam_order = signal_setting.qam_order
         self.pol_number = signal_setting.pol_number
+        self.symbol = None
 
         if signal_setting.need_init:
             self.nbits = self.symbol_number * np.log2(self.qam_order)
             self.bit_sequence = np.random.randint(0, 2, (self.pol_number, int(self.nbits)), dtype=bool)
             self.constl = cal_symbols_qam(self.qam_order) / np.sqrt(cal_scaling_factor_qam(self.qam_order))
-            self.symbol = None
             self.map()
             samples = np.zeros(shape=(self.pol_number, self.symbol_number * signal_setting.sps), dtype=np.complex)
             samples[:, ::signal_setting.sps] = self.symbol
+            super(QamSignal, self).__init__(samples=samples, center_freq=signal_setting.center_freq,
+                                            sps=signal_setting.sps,
+                                            device=signal_setting.device)
+        else:
+            assert symbol is not None
+            assert samples is not None
+            self.symbol = symbol
             super(QamSignal, self).__init__(samples=samples, center_freq=signal_setting.center_freq,
                                             sps=signal_setting.sps,
                                             device=signal_setting.device)
