@@ -17,7 +17,7 @@ def scatterplot(signal, interval=1):
 
         samples = np.copy(signal)
 
-    with plt.style.context(['science', 'ieee', 'no-latex']):
+    with plt.style.context(['ieee', 'science','grid', 'no-latex']):
         fig, axes = plt.subplots(1, samples.shape[0])
         axes = np.atleast_2d(axes)[0]
         pol = 0
