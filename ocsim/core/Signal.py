@@ -156,11 +156,18 @@ class QamSignal(Signal):
 
 class WdmSignal(Signal):
 
-    def __init__(self, symbols, samples, freqes, center_freq,  sps, device):
+    def __init__(self, symbols, samples, freqes, center_freq,  fs, device):
         import numpy as np
         self.symbols = symbols
         self.freq = freqes
         self.relative_freq = np.array(self.freq) - center_freq
+        self._fs = fs
         super(WdmSignal, self).__init__(samples=samples, center_freq=center_freq,
-                                        sps=sps, device=device)
+                                      sps=None, device=device)
 
+    @property
+    def fs(self):
+        return self.fs
+    @fs.setter
+    def fs(self,value):
+        self._fs = value

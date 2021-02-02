@@ -39,7 +39,7 @@ def snr_meter(signal: Signal):
     signal.normalize()
     assert signal.shape == signal.symbol.shape
     noise = signal[:] - signal.symbol
-    noise_power = np.sum(np.mean(np.abs(signal[:]) ** 2, axis=-1))
+    noise_power = np.sum(np.mean(np.abs(noise[:]) ** 2, axis=-1))
     return 10 * np.log10((2 - noise_power) / noise_power)
 
 
@@ -84,8 +84,9 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
 
 
 def save_matfiles(signal: QamSignal, file_name):
-    from mat73 import savemat
-
+    from scipy.io import savemat
+    device = signal.device
+    signal.to('cpu')
     if '.mat' not in file_name:
         file_name = file_name + '.mat'
 
@@ -93,3 +94,4 @@ def save_matfiles(signal: QamSignal, file_name):
                             sps=signal.sps, symbol_rate=signal.symbol_rate, symbol_number=signal.symbol_number,
                             qam_order=signal.qam_order, pol_number=signal.pol_number
                             ))
+    signal.to(device)
