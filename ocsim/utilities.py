@@ -72,10 +72,10 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
                                          qam_order=qam_order,
                                          need_init=False,
                                          pol_number=pol_number
-                                         ))
+                                         ),symbol=symbol,samples=samples)
 
-        signal.symbol = symbol
-        signal.samples = samples
+        # signal.symbol = symbol
+        # signal.samples = samples
 
     else:
         raise NotImplementedError

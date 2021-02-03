@@ -31,6 +31,7 @@ class WSS:
             H = H / np.max(H)
 
             self.H = H
+        get_transfer_function_real()
 
     def __core(self,signal):
         

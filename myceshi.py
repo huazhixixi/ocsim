@@ -110,14 +110,24 @@ def test_mux(device):
         plt.show()
     return wdm_signal
 
-from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping
+from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping,ConstantGainEDFA,WSS
 
 signal = QamSignal(SignalSetting(device='cuda',center_freq=193.1e12))
 shaping = PulseShaping(0.02)
 signal = shaping(signal)
-# resampler = IdealResampler(signal.sps,4)
-dac = DAC(6,None,4)
-signal = dac(signal)
-
-laser = Laser(1,100e3)
+resampler = IdealResampler(signal.sps,4)
+signal = resampler(signal)
+laser = Laser(1,None)
 signal = laser(signal)
+signal.power()
+
+fiber = NonlinearFiber(FiberSetting())
+edfa = ConstantGainEDFA(16,5)
+wss = WSS(0,50e9,8.8e9)
+signal = fiber(signal)
+signal = edfa(signal)
+power = signal.power(False)
+signal = wss(signal)
+power_2 = signal.power(False)
+signal[:] = np.sqrt(power/power_2) * signal[:]
+print(signal.power())

@@ -53,7 +53,7 @@ def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
 
 def mux(signals, center_freq=None):
     freq = [signal.center_freq for signal in signals]
-    device = [signal.device for signal in signals]
+    # device = [signal.device for signal in signals]
     length = np.diff([signal.shape[1] for signal in signals])
     fs = np.diff([signal.fs for signal in signals])
 

@@ -82,7 +82,7 @@ class Signal(object):
     def __setitem__(self, key, value):
         self.samples[key] = value
 
-    def power(self):
+    def power(self,veborse=True):
         import numpy as np
         @device_selection(self.device, True)
         def power_(backend, signal_obj):
@@ -95,9 +95,10 @@ class Signal(object):
                 pass
             # print(f'xpol:{power[0]:.4}W, ypol:{power[1]:.4} W')
             # print(f'xpol:{power_dbm[0]:.4} dBm, ypol:{power_dbm[1]:.4} dBm')
-            print(f'total:{10 * np.log10(1000 * power.sum()):.4} dBm')
-
-        power_(self)
+            if veborse:
+                print(f'total:{10 * np.log10(1000 * power.sum()):.4} dBm')
+            return 1000 * power.sum()
+        return power_(self)
 
     @property
     def shape(self):
