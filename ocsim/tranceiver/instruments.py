@@ -71,7 +71,7 @@ def mux(signals, center_freq=None):
 
     symbols = [signal.symbol for signal in signals]
 
-    @device_selection(device[0], True)
+    @device_selection(signals[0].device, True)
     def mux_real(backend):
         temp = 0
 
