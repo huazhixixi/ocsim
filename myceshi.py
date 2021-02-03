@@ -110,5 +110,14 @@ def test_mux(device):
         plt.show()
     return wdm_signal
 
-wdm_cpu = test_mux('cpu')
-wdm_cuda = test_mux('cuda:0')
+from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping
+
+signal = QamSignal(SignalSetting(device='cuda',center_freq=193.1e12))
+shaping = PulseShaping(0.02)
+signal = shaping(signal)
+# resampler = IdealResampler(signal.sps,4)
+dac = DAC(6,None,4)
+signal = dac(signal)
+
+laser = Laser(1,100e3)
+signal = laser(signal)

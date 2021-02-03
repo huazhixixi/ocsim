@@ -6,7 +6,7 @@ import numpy as np
 
 
 def scatterplot(signal, interval=1):
-    plt.figure()
+    # plt.figure()
     try:
         if 'cuda' in signal.device:
 

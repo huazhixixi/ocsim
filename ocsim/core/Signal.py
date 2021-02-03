@@ -114,8 +114,12 @@ class Signal(object):
     @property
     def fs(self):
         return self.symbol_rate * self.sps
-
-
+    @property
+    def real(self):
+        return self.samples.real
+    @property
+    def imag(self):
+        return self.samples.imag
 class QamSignal(Signal):
 
     def __init__(self,
