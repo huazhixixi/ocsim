@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
+from DensityPlot import density2d
 
 from ..core import Signal
 
 import numpy as np
 
 
-def scatterplot(signal, interval=1):
-    # plt.figure()
+def scatterplot(signal, interval=1,is_density = False,size = 1):
+
     try:
         if 'cuda' in signal.device:
 
@@ -21,12 +22,16 @@ def scatterplot(signal, interval=1):
         fig, axes = plt.subplots(1, samples.shape[0])
         axes = np.atleast_2d(axes)[0]
         pol = 0
+        xlim = [samples[pol].real.min() - 0.005, samples[pol].real.max() + 0.005]
+        ylim = [samples[pol].imag.min() - 0.005, samples[pol].imag.max() + 0.005]
         for ax in axes:
-            xlim = [samples[pol].real.min() - 0.05, samples[pol].real.max() + 0.05]
-            ylim = [samples[pol].imag.min() - 0.05, samples[pol].imag.max() + 0.05]
+
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)
-            ax.scatter(samples[pol].real, samples[pol].imag, c='b', s=1)
+            if not is_density:
+                ax.scatter(samples[pol].real, samples[pol].imag, c='b', s=size)
+            else:
+                density2d(x=samples[pol].real,y=samples[pol].imag,bins=500,ax=ax,s=size)
             pol += 1
             ax.set_aspect(1)
         # viz = visdom.Visdom()

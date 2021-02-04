@@ -43,38 +43,26 @@ def receiver(file_name):
     phase = np.angle(np.mean(signal[:,::2]/signal.symbol,axis=-1,keepdims=True))
     signal[:] = signal[:] * np.exp(-1j*phase)
     signal.samples = signal[:,::2]
+    scatterplot(signal,2,True)
     return snr_meter(signal)
 
-# simulate(True)
-
-
 #
-snrs_nonli = []
-for power in (np.arange(-3,3,0.5)):
-    snrs_nonli.append(receiver(f'data/nonli_power_{power:.2f}.mat'))
+signal = QamSignal(SignalSetting(device='cuda:0', center_freq=193.1e12))
+# scatterplot(signal.symbol,1,False,size=3)
+shaping = PulseShaping(0.02)
+signal = shaping(signal)
+resampler = IdealResampler(signal.sps, 4)
+signal = resampler(signal)
+laser = Laser(2, None,None)
+signal = laser(signal)
+for _ in tqdm.tqdm(range(15)):
+    fiber = NonlinearFiber(FiberSetting(step_length=80,gamma=0))
+    edfa = ConstantGainEDFA(16, 5)
 
+    signal = fiber(signal)
+    signal = edfa(signal)
+    # signal[:] = np.sqrt(10**(16/10)) * signal[:]
 
-
-
-snrs_nli = []
-for power in (np.arange(-3,3,0.5)):
-    snrs_nli.append(receiver(f'data/power_{power:.2f}.mat'))
-
-snrs_wssnli = []
-for power in (np.arange(-3,3,0.5)):
-    snrs_wssnli.append(receiver(f'data/wss_power_{power:.2f}.mat'))
-
-from FigureManger import *
-
-layout = Layout(x_axis_name='Launch Power',y_axis_name='SNR [dB]',
-legend=("ASE","ASE + NLI","ASE + NLI + WSS"),markers=('o','*','x'),style=('science','ieee','no-latex'))
-
-data = DataSetting(np.atleast_2d([np.arange(-3,3,0.5)]*3),np.atleast_2d(np.array([snrs_nonli,snrs_nli,snrs_wssnli])))
-fig = FigureManger(data,layout,keyword=['ase','nli+ase',"ase+nli+wss"])
-fig.plot()
-fig.save("JOCN_figure")
-
-#
-#
-fig.update_layout(dict(style=('science', 'ieee', 'grid', 'no-latex')))
-fig.update_layout(dict(legend=('ASE', "NLI+ASE", "NLI+ASE+WSS")))
+save_matfiles(signal,'ase_2dbm',False)
+# print(receiver('no_ase_3dbm.mat'))
+print(receiver('ase_2dbm.mat'))

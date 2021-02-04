@@ -122,7 +122,7 @@ shaping = PulseShaping(0.02)
 signal = shaping(signal)
 resampler = IdealResampler(signal.sps,4)
 signal = resampler(signal)
-laser = Laser(1,None)
+laser = Laser(1,None,None)
 signal = laser(signal)
 # signal.power()
 #
@@ -136,14 +136,18 @@ wss4 = WSS(0,30e9,20.8e9)
 # signal = fiber(signal)
 # signal = edfa(signal)
 # power = signal.power(False)
-signal = wss1(signal)
-signal = wss2(signal)
-signal = wss3(signal)
-signal = wss4(signal)
+# signal = wss1(signal)
+# signal = wss2(signal)
+# signal = wss3(signal)
+# signal = wss4(signal)
+#
+# print('hello')
+# from ocsim import scatterplot_density
 
-print('hello')
-
-
+# scatterplot_density(signal[0].real.get(),signal[0].imag.get())
+# plt.show()
+from ocsim import scatterplot
+scatterplot(signal,4,False)
 from ocsim import FiberSetting
 
 setting = FiberSetting(alpha_db=0.2,gamma=1.3,length=80,D=16.7,slope=0,reference_wavelength_nm=1550,step_length=20/1000)
