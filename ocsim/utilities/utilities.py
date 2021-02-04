@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from .core import Signal
+from ..core import Signal
 
 import numpy as np
 
@@ -43,7 +43,7 @@ def snr_meter(signal: Signal):
     return 10 * np.log10((2 - noise_power) / noise_power)
 
 
-from .core import QamSignal, SignalSetting
+from ..core import QamSignal, SignalSetting
 
 
 def read_matfiles(file_name, is_wdm=False, device='cpu'):
@@ -74,24 +74,23 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
                                          pol_number=pol_number
                                          ),symbol=symbol,samples=samples)
 
-        # signal.symbol = symbol
-        # signal.samples = samples
-
     else:
         raise NotImplementedError
 
     return signal
 
 
-def save_matfiles(signal: QamSignal, file_name):
+def save_matfiles(signal: QamSignal, file_name,is_wdm):
     from scipy.io import savemat
     device = signal.device
     signal.to('cpu')
     if '.mat' not in file_name:
         file_name = file_name + '.mat'
-
-    savemat(file_name, dict(symbol=signal.symbol, samples=signal[:], center_freq=signal.center_freq,
-                            sps=signal.sps, symbol_rate=signal.symbol_rate, symbol_number=signal.symbol_number,
-                            qam_order=signal.qam_order, pol_number=signal.pol_number
-                            ))
+    if not is_wdm:
+        savemat(file_name, dict(symbol=signal.symbol, samples=signal[:], center_freq=signal.center_freq,
+                                sps=signal.sps, symbol_rate=signal.symbol_rate, symbol_number=signal.symbol_number,
+                                qam_order=signal.qam_order, pol_number=signal.pol_number
+                                ))
+    else:
+        raise NotImplementedError
     signal.to(device)

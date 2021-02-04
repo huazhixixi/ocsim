@@ -5,8 +5,11 @@ from scipy.constants import h, c
 
 class EDFA:
 
-    def calc_noise_power(self, wavelength, fs):
-        ase_psd = (h * c / wavelength) * (self.gain_linear * 10 ** (self.nf / 10) - 1) / 2
+    def calc_noise_power(self, wavelength_m, fs):
+        '''
+        One pol
+        '''
+        ase_psd = (h * c / wavelength_m) * (self.gain_linear * 10 ** (self.nf / 10) - 1) / 2
         noise_power = ase_psd * fs
         return noise_power
 
@@ -36,6 +39,10 @@ class ConstantGainEDFA(EDFA):
         @device_selection(signal.device, True)
         def core_real(backend):
             noise_sequence = self.noise_sequence(signal)
+            noise_power = self.calc_noise_power(c/signal.center_freq,signal.fs)
+            psd = noise_power/signal.fs
+            ase_125 = psd * 12.5e9
+            signal.ase_power_12p5 += ase_125
             signal[:] = signal[:] * backend.sqrt(self.gain_linear)
             signal[:] = signal[:] + noise_sequence
             return signal

@@ -28,6 +28,8 @@ class Signal(object):
         self.center_freq = center_freq
         self.sps = sps
         self.device = 'cpu'
+        self.ase_power_12p5 = 0
+        self.signal_power = None
         self.to(device)
         self.make_sure_2d()
 
@@ -87,17 +89,13 @@ class Signal(object):
         @device_selection(self.device, True)
         def power_(backend, signal_obj):
             power = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1)
-            power_dbm = 10 * backend.log10(power * 1000)
             try:
                 power = power.get()
-                power_dbm = power_dbm.get()
             except AttributeError:
                 pass
-            # print(f'xpol:{power[0]:.4}W, ypol:{power[1]:.4} W')
-            # print(f'xpol:{power_dbm[0]:.4} dBm, ypol:{power_dbm[1]:.4} dBm')
             if veborse:
                 print(f'total:{10 * np.log10(1000 * power.sum()):.4} dBm')
-            return 1000 * power.sum()
+            return  power.sum()
         return power_(self)
 
     @property
@@ -121,6 +119,7 @@ class Signal(object):
     @property
     def imag(self):
         return self.samples.imag
+
 class QamSignal(Signal):
 
     def __init__(self,

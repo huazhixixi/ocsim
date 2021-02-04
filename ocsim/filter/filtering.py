@@ -63,3 +63,8 @@ def filter_signal(signal,fs,cutoff, ftype="bessel", order=2, analog=False):
 #     if sig.ndim == 1:
 #         return ((ret[:, N:] - ret[:,:-N])/N).flatten()
 #     else:
+
+def ideal_low_filter(signal,bw):
+    pass
+
+

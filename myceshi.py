@@ -102,16 +102,21 @@ def test_mux(device):
 
     from ocsim import save_matfiles
     import matplotlib.pyplot as plt
-    try:
-        plt.psd(wdm_signal[0])
-        plt.show()
-    except Exception:
-        plt.psd(wdm_signal[0].get())
-        plt.show()
-    return wdm_signal
 
+    with plt.style.context(['science','ieee','grid','no-latex']):
+        try:
+            plt.psd(wdm_signal[0],NFFT=16384)
+            plt.tight_layout()
+            plt.savefig('/home/huazhilun/code/notes/public/wdm.png')
+        except Exception:
+            plt.psd(wdm_signal[0].get(), NFFT=16384)
+            plt.tight_layout()
+            plt.savefig('/home/huazhilun/code/notes/public/wdm.png')
+        return wdm_signal
+
+# test_mux('cuda:0')
 from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping,ConstantGainEDFA,WSS
-
+#
 signal = QamSignal(SignalSetting(device='cuda',center_freq=193.1e12))
 shaping = PulseShaping(0.02)
 signal = shaping(signal)
@@ -119,15 +124,30 @@ resampler = IdealResampler(signal.sps,4)
 signal = resampler(signal)
 laser = Laser(1,None)
 signal = laser(signal)
-signal.power()
+# signal.power()
+#
+# fiber = NonlinearFiber(FiberSetting())
+# edfa = ConstantGainEDFA(16,5)
+wss1 = WSS(0,30e9,8.8e9)
+wss2 = WSS(0,30e9,13.8e9)
+wss3 = WSS(0,30e9,15.8e9)
+wss4 = WSS(0,30e9,20.8e9)
 
-fiber = NonlinearFiber(FiberSetting())
-edfa = ConstantGainEDFA(16,5)
-wss = WSS(0,50e9,8.8e9)
-signal = fiber(signal)
-signal = edfa(signal)
-power = signal.power(False)
-signal = wss(signal)
-power_2 = signal.power(False)
-signal[:] = np.sqrt(power/power_2) * signal[:]
-print(signal.power())
+# signal = fiber(signal)
+# signal = edfa(signal)
+# power = signal.power(False)
+signal = wss1(signal)
+signal = wss2(signal)
+signal = wss3(signal)
+signal = wss4(signal)
+
+print('hello')
+
+
+from ocsim import FiberSetting
+
+setting = FiberSetting(alpha_db=0.2,gamma=1.3,length=80,D=16.7,slope=0,reference_wavelength_nm=1550,step_length=20/1000)
+
+# power_2 = signal.power(False)
+# signal[:] = np.sqrt(power/power_2) * signal[:]
+# print(signal.power())

@@ -141,3 +141,15 @@ class CDC:
 
     def __call__(self, signal):
         return self.__core(signal)
+
+
+class LmsPll:
+
+    def __init__(self,tap_number,lr):
+        self.tap_number = tap_number
+        self.lr = lr
+
+
+class CPE:
+    pass
+

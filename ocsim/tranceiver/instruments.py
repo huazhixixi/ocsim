@@ -18,7 +18,6 @@ def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
     # Create a 2D signal
     @device_selection(signal.device,True)
     def quantize_signal_real(backend):
-        import copy
         sig_in = signal
         assert sig_in.samples.ndim ==2
         # sig_in = backend.atleast_2d(sig_in)
@@ -89,9 +88,10 @@ def mux(signals, center_freq=None):
 
 class Laser:
 
-    def __init__(self, power, lw=0):
+    def __init__(self, power, lw=None,fo = None):
         self.power = power
         self.lw = lw
+        self.fo = fo
 
     def __call__(self, signal):
         return self.__core(signal)
@@ -100,7 +100,7 @@ class Laser:
 
         @device_selection(signal.device, True)
         def core_real(backend):
-            if self.lw:
+            if self.lw is not None:
                 var = 2 * backend.pi * self.lw / signal.fs
                 f = backend.random.normal(scale=backend.sqrt(var), size=signal.shape)
                 if len(f.shape) > 1:
@@ -108,9 +108,12 @@ class Laser:
                 else:
                     f = np.cumsum(f)
                 signal[:] = backend.exp(1j * f) * signal[:]
+            if self.fo is not None:
+                signal[:] = backend.exp(1j * 2*backend.pi * backend.arange(signal.shape[1])/signal.fs * self.fo)
             signal.normalize()
             power = 10**(self.power/10)/1000/signal.shape[0]
             signal[:] = backend.sqrt(power) * signal[:]
+            signal.signal_power = 10**(self.power/10)/1000
             return signal
         return core_real()
 
@@ -128,7 +131,7 @@ class DAC:
 
     def __core(self,signal):
         from .dsp import IdealResampler
-        from .filtering import filter_signal
+        from ..filter.filtering import filter_signal
         signal = IdealResampler(signal.sps,new_sps=self.new_sps)(signal)
         sig_enob_noise = quantize_signal(signal, nbits=self.enob, rescale_in=True, rescale_out=True)
 
@@ -142,3 +145,6 @@ class DAC:
 
     def __call__(self,signal):
         return self.__core(signal)
+
+class ADC:
+    pass
