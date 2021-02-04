@@ -28,8 +28,8 @@ class Signal(object):
         self.center_freq = center_freq
         self.sps = sps
         self.device = 'cpu'
-        self.ase_power_12p5 = 0
-        self.signal_power = None
+        self.ase_power_12p5 = 0 # set in EDFA
+        self.signal_power = None # set in Laser
         self.to(device)
         self.make_sure_2d()
 

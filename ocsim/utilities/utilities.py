@@ -6,8 +6,7 @@ from ..core import Signal
 import numpy as np
 
 
-def scatterplot(signal, interval=1,is_density = False,size = 1):
-
+def scatterplot(signal, interval=1, is_density=False, size=1):
     try:
         if 'cuda' in signal.device:
 
@@ -18,7 +17,7 @@ def scatterplot(signal, interval=1,is_density = False,size = 1):
 
         samples = np.copy(signal)
 
-    with plt.style.context(['ieee', 'science','grid', 'no-latex']):
+    with plt.style.context(['ieee', 'science', 'grid', 'no-latex']):
         fig, axes = plt.subplots(1, samples.shape[0])
         axes = np.atleast_2d(axes)[0]
         pol = 0
@@ -31,7 +30,7 @@ def scatterplot(signal, interval=1,is_density = False,size = 1):
             if not is_density:
                 ax.scatter(samples[pol].real, samples[pol].imag, c='b', s=size)
             else:
-                density2d(x=samples[pol].real,y=samples[pol].imag,bins=500,ax=ax,s=size)
+                density2d(x=samples[pol].real, y=samples[pol].imag, bins=500, ax=ax, s=size)
             pol += 1
             ax.set_aspect(1)
         # viz = visdom.Visdom()
@@ -68,6 +67,8 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
     symbol_number = data["symbol_number"][0, 0]
     qam_order = data['qam_order'][0, 0]
     pol_number = data['pol_number'][0, 0]
+    ase_power_12p5 = data['ase_power_12p5'][0,0]
+    signal_power = data['signal_power'][0,0]
     if not is_wdm:
         signal = QamSignal(SignalSetting(center_freq=center_freq,
                                          sps=sps,
@@ -77,15 +78,16 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
                                          qam_order=qam_order,
                                          need_init=False,
                                          pol_number=pol_number
-                                         ),symbol=symbol,samples=samples)
-
+                                         ), symbol=symbol, samples=samples)
+        signal.signal_power = signal_power
+        signal.ase_power_12p5 = ase_power_12p5
     else:
         raise NotImplementedError
 
     return signal
 
 
-def save_matfiles(signal: QamSignal, file_name,is_wdm):
+def save_matfiles(signal: QamSignal, file_name, is_wdm):
     from scipy.io import savemat
     device = signal.device
     signal.to('cpu')
@@ -94,7 +96,8 @@ def save_matfiles(signal: QamSignal, file_name,is_wdm):
     if not is_wdm:
         savemat(file_name, dict(symbol=signal.symbol, samples=signal[:], center_freq=signal.center_freq,
                                 sps=signal.sps, symbol_rate=signal.symbol_rate, symbol_number=signal.symbol_number,
-                                qam_order=signal.qam_order, pol_number=signal.pol_number
+                                qam_order=signal.qam_order, pol_number=signal.pol_number,
+                                ase_power_12p5=signal.ase_power_12p5, signal_power=signal.signal_power
                                 ))
     else:
         raise NotImplementedError
