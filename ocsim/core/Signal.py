@@ -84,7 +84,7 @@ class Signal(object):
     def __setitem__(self, key, value):
         self.samples[key] = value
 
-    def power(self,veborse=True):
+    def power(self, veborse=True):
         import numpy as np
         @device_selection(self.device, True)
         def power_(backend, signal_obj):
@@ -95,7 +95,8 @@ class Signal(object):
                 pass
             if veborse:
                 print(f'total:{10 * np.log10(1000 * power.sum()):.4} dBm')
-            return  power.sum()
+            return power.sum()
+
         return power_(self)
 
     @property
@@ -113,19 +114,22 @@ class Signal(object):
     @property
     def fs(self):
         return self.symbol_rate * self.sps
+
     @property
     def real(self):
         return self.samples.real
+
     @property
     def imag(self):
         return self.samples.imag
+
 
 class QamSignal(Signal):
 
     def __init__(self,
                  signal_setting: SignalSetting,
-                 samples = None,
-                 symbol = None
+                 samples=None,
+                 symbol=None
                  ):
         import numpy as np
         from .constl import cal_symbols_qam, cal_scaling_factor_qam
@@ -158,20 +162,22 @@ class QamSignal(Signal):
         _, encoding = generate_mapping(self.qam_order)
         self.symbol = map(self.bit_sequence, encoding=encoding, M=self.qam_order)
 
+
 class WdmSignal(Signal):
 
-    def __init__(self, symbols, samples, freqes, center_freq,  fs, device):
+    def __init__(self, symbols, samples, freqes, center_freq, fs, device):
         import numpy as np
         self.symbols = symbols
         self.freq = freqes
         self.relative_freq = np.array(self.freq) - center_freq
         self._fs = fs
         super(WdmSignal, self).__init__(samples=samples, center_freq=center_freq,
-                                      sps=None, device=device)
+                                        sps=None, device=device)
 
     @property
     def fs(self):
         return self.fs
+
     @fs.setter
-    def fs(self,value):
+    def fs(self, value):
         self._fs = value
