@@ -50,9 +50,6 @@ class WSS:
 
 
 
-class ROADM:
-    pass
-
 
 
 

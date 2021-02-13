@@ -102,3 +102,40 @@ def save_matfiles(signal: QamSignal, file_name, is_wdm):
     else:
         raise NotImplementedError
     signal.to(device)
+
+from contextlib import contextmanager
+
+@contextmanager
+def cpu(signal):
+    original_device = signal.device
+    signal.to('cpu')
+    yield signal
+    signal.to(original_device)
+
+@contextmanager
+def cuda(signal,cuda_number):
+    original_device = signal.device
+    signal.to(f'cuda:cuda_number')
+    yield signal
+    signal.to(original_device)
+
+
+class Transimitter:
+
+    def __init__(self,signal_setting,dac_sps,beta,laser_power_dbm):
+        self.signal_setting = signal_setting
+        self.dac_sps = dac_sps
+        self.beta = beta
+        self.laser_power = laser_power_dbm
+
+    def prop(self,dsp_modules=None):
+
+        signal = QamSignal(self.signal_setting)
+        if dsp_modules is None:
+            dsp_modules = []
+            from ..tranceiver import Laser,PulseShaping,IdealResampler
+            dsp_modules.extend([PulseShaping(self.beta),IdealResampler(signal.sps,self.dac_sps),Laser(self.laser_power)])
+        for module in dsp_modules:
+            signal = module(signal)
+
+        return signal

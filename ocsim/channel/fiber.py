@@ -133,3 +133,9 @@ class NonlinearFiber:
     
     def __call__(self,signal):
         return self.prop(signal)
+
+def pmd(signal):
+    pass
+
+def sop(signal):
+    pass

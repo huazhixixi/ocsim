@@ -115,23 +115,23 @@ def test_mux(device):
         return wdm_signal
 
 # test_mux('cuda:0')
-from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping,ConstantGainEDFA,WSS
-#
-signal = QamSignal(SignalSetting(device='cuda',center_freq=193.1e12))
-shaping = PulseShaping(0.02)
-signal = shaping(signal)
-resampler = IdealResampler(signal.sps,4)
-signal = resampler(signal)
-laser = Laser(1,None,None)
-signal = laser(signal)
+# from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping,ConstantGainEDFA,WSS
+# #
+# signal = QamSignal(SignalSetting(device='cuda',center_freq=193.1e12))
+# shaping = PulseShaping(0.02)
+# signal = shaping(signal)
+# resampler = IdealResampler(signal.sps,4)
+# signal = resampler(signal)
+# laser = Laser(1,None,None)
+# signal = laser(signal)
 # signal.power()
 #
 # fiber = NonlinearFiber(FiberSetting())
 # edfa = ConstantGainEDFA(16,5)
-wss1 = WSS(0,30e9,8.8e9)
-wss2 = WSS(0,30e9,13.8e9)
-wss3 = WSS(0,30e9,15.8e9)
-wss4 = WSS(0,30e9,20.8e9)
+# wss1 = WSS(0,30e9,8.8e9)
+# wss2 = WSS(0,30e9,13.8e9)
+# wss3 = WSS(0,30e9,15.8e9)
+# wss4 = WSS(0,30e9,20.8e9)
 
 # signal = fiber(signal)
 # signal = edfa(signal)
@@ -145,13 +145,36 @@ wss4 = WSS(0,30e9,20.8e9)
 # from ocsim import scatterplot_density
 
 # scatterplot_density(signal[0].real.get(),signal[0].imag.get())
-# plt.show()
-from ocsim import scatterplot
-scatterplot(signal,4,False)
-from ocsim import FiberSetting
+# # plt.show()
+# from ocsim import scatterplot
+# scatterplot(signal,4,False)
+# from ocsim import FiberSetting
+#
+# setting = FiberSetting(alpha_db=0.2,gamma=1.3,length=80,D=16.7,slope=0,reference_wavelength_nm=1550,step_length=20/1000)
+#
+# # power_2 = signal.power(False)
+# # signal[:] = np.sqrt(power/power_2) * signal[:]
+# # print(signal.power())
 
-setting = FiberSetting(alpha_db=0.2,gamma=1.3,length=80,D=16.7,slope=0,reference_wavelength_nm=1550,step_length=20/1000)
+from ocsim import Laser,QamSignal,DAC,IdealResampler,PulseShaping,ConstantGainEDFA,WSS
+signals = []
 
-# power_2 = signal.power(False)
-# signal[:] = np.sqrt(power/power_2) * signal[:]
-# print(signal.power())
+for i in range(5):
+
+    signal = QamSignal(SignalSetting(symbol_rate=8e9,device='cuda',center_freq=193.1e12+10.5e9*i))
+    shaping = PulseShaping(0.02)
+    signal = shaping(signal)
+
+    resampler = IdealResampler(signal.sps,16)
+    signal = resampler(signal)
+    laser = Laser(1,None,None)
+    signal = laser(signal)
+    signals.append(signal)
+
+from ocsim import  mux
+wdm_signal = mux(signals)
+import matplotlib.pyplot as plt
+with plt.style.context(['science','ieee','grid','no-latex']):
+    plt.psd(wdm_signal[0].get(),NFFT=16384)
+    plt.tight_layout()
+    plt.show()
