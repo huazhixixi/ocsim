@@ -63,7 +63,7 @@ def rrcos_time(backend, alpha, span, sps):
         else:
             b[i] = 4 * a / (backend.pi * (1 - 16 * a ** 2 * (n[i] / Ns) ** 2))
             b[i] = b[i] * (backend.cos((1 + a) * backend.pi * n[i] / Ns) + backend.sinc((1 - a) * n[i] / Ns) * (
-                        1 - a) * backend.pi / (
+                    1 - a) * backend.pi / (
                                    4. * a))
     return b / backend.sqrt(backend.sum(backend.abs(b) ** 2))
 
@@ -143,13 +143,61 @@ class CDC:
         return self.__core(signal)
 
 
-class LmsPll:
+class Equalizer:
 
-    def __init__(self,tap_number,lr):
+    def __init__(self, tap_number):
+        import numpy as np
+        self.wxx = np.zeros((1, tap_number), dtype=np.complex)
+        self.wxy = np.zeros((1, tap_number), dtype=np.complex)
+
+        self.wyx = np.zeros((1, tap_number), dtype=np.complex)
+
+        self.wyy = np.zeros((1, tap_number), dtype=np.complex)
+        self.wxx[0, tap_number // 2] = 1
+        self.wyy[0, tap_number // 2] = 1
+
+
+class LmsPll(Equalizer):
+
+    def __init__(self, tap_number,g, lr_train, total_loop, train_loop, lr_dd=None):
         self.tap_number = tap_number
-        self.lr = lr
+        self.lr_train = lr_train
+        self.lr_dd = lr_dd
+        # if train_loop < total_loop:
+        #     assert lr_dd is not None
+        #     self.lr_dd = lr_dd
+        self.total_loop = total_loop
+        self.train_loop = train_loop
+        self.g = g
+        super(LmsPll, self).__init__(tap_number)
+
+    def prop(self, signal):
+        from .utilities import _segment_axis
+        import numpy as np
+        from .numba_backend import lms_equalize_core_pll
+        train_symbol = np.asarray(signal.symbol[:, self.tap_number // 2 // signal.sps:],order='C')
+        samples_xpol = _segment_axis(signal[0], self.tap_number, self.tap_number - signal.sps)
+        samples_ypol = _segment_axis(signal[1], self.tap_number, self.tap_number - signal.sps)
+        self.error_xpol_array = np.zeros((self.total_loop, len(samples_xpol)))
+        self.error_ypol_array = np.zeros((self.total_loop, len(samples_xpol)))
+
+        for idx in range(self.total_loop):
+            is_train = idx < self.train_loop
+            symbols, self.wxx, self.wxy, self.wyx,  self.wyy, error_xpol_array, error_ypol_array \
+                = lms_equalize_core_pll(samples_xpol, samples_ypol, self.g, train_symbol, self.wxx, self.wyy, self.wxy,
+                                        self.wyx, self.lr_train, self.lr_dd, is_train)
+
+            self.error_xpol_array[idx] = np.abs(error_xpol_array[0]) ** 2
+            self.error_ypol_array[idx] = np.abs(error_ypol_array[0]) ** 2
+
+        signal.symbol = train_symbol[:,:symbols.shape[1]]
+        signal.samples = symbols
+        return signal
+    def __call__(self, signal):
+        from ..utilities import cpu
+        with cpu(signal) as signal:
+            return  self.prop(signal)
 
 
 class CPE:
     pass
-

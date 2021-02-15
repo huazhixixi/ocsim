@@ -120,6 +120,28 @@ def cuda(signal,cuda_number):
     signal.to(original_device)
 
 
+def load_ase(signal:QamSignal,osnr_db):
+    from ..device_manager import device_selection
+    @device_selection(signal.device,True)
+    def load_ase_real(backend):
+        baudrate = signal.symbol_rate
+        snr_db = osnr_db - 10*backend.log10(baudrate/12.5e9)
+        snr_linear = 10**(snr_db/10)
+        signal.normalize()
+
+        noise_power = signal.power(veborse=False)/snr_linear
+        noise_power_each_pol = noise_power/2
+        psd_each_pol = noise_power_each_pol/signal.symbol_rate
+        noise_power_each_pol = psd_each_pol * signal.fs
+        noise = backend.sqrt(noise_power_each_pol/2) * (backend.random.randn(*signal.shape)+1j*backend.random.randn(*signal.shape))
+        signal[:] = signal[:] + noise
+        return signal
+    return load_ase_real()
+
+
+
+
+
 class Transimitter:
 
     def __init__(self,signal_setting,dac_sps,beta,laser_power_dbm):
