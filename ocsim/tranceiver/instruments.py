@@ -148,3 +148,40 @@ class DAC:
 
 class ADC:
     pass
+
+class SimpleSingleChannelReceiver:
+
+    def __init__(self,kind,beta,fiber=None):
+        self.kind = kind
+        self.fiber = fiber
+        self.beta = beta
+
+    def receiver_fiber(self,signal):
+        assert self.fiber is not None
+        from . dsp import PulseShaping, CDC,IdealResampler
+        cdc = CDC(self.fiber)
+        signal = cdc(signal)
+        return self.receiver(signal)
+
+    def receiver_awgn(self,signal):
+        return self.receiver(signal)
+
+    def receiver(self,signal):
+        from . dsp import PulseShaping,IdealResampler
+        shaping = PulseShaping(self.beta)
+        resampler = IdealResampler(signal.sps,2)
+        signal = resampler(signal)
+        signal = shaping(signal)
+
+        signal.downsample(2)
+
+        signal.cpu()
+        phase = np.angle(np.mean(signal[:] / signal.symbol, axis=-1, keepdims=True))
+        signal[:] = signal[:] * np.exp(-1j * phase)
+        return signal
+
+    def __call__(self,signal):
+        if self.kind.lower()=="fiber":
+            self.receiver_fiber(signal)
+        if self.kind.lower()=="awgn":
+            self.receiver_awgn(signal)

@@ -123,6 +123,9 @@ class Signal(object):
     def imag(self):
         return self.samples.imag
 
+    def downsample(self,factor):
+        self.samples = self.samples[:,::factor]
+
 
 class QamSignal(Signal):
 
