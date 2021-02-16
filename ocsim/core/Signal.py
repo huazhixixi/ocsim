@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from ..device_manager import device_selection
-
+import numpy as np
 
 @dataclass
 class SignalSetting:
@@ -135,13 +135,12 @@ class Signal(object):
         print(string1)
         from prettytable import PrettyTable
         information = PrettyTable()
-        information.field_name = ["symbol_rate [GHz]",
-                                  "symbol_length",
-                                  "sps", "fs", "mf", "center_freq", "power[w]"]
+        information.field_names = ["symbol_rate [GHz]",
+                                   "symbol_length",
+                                   "sps", "fs[GHz]", "mf", "center_freq[THz]", "power[dBm]"]
         information.add_row([self.symbol_rate/1e9, self.symbol_number, self.sps,
-                             self.fs /
-                             1e9, self.qam_order, self.center_freq, self.power(
-                                 False)
+                             self.fs /1e9, self.qam_order, self.center_freq/1e12,
+                             f"{10*np.log10(self.power(False)*1000) :.4}"
                              ])
 
         print(information)
