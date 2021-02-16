@@ -1,7 +1,7 @@
-from ..device_manager import device_selection
-from scipy.fft import fftfreq
-from ..core import Signal
 import fractions
+
+from ..core import Signal
+from ..device_manager import device_selection
 
 
 def resamplingfactors(fold, fnew):
@@ -159,7 +159,7 @@ class Equalizer:
 
 class LmsPll(Equalizer):
 
-    def __init__(self, tap_number,g, lr_train, total_loop, train_loop, lr_dd=None):
+    def __init__(self, tap_number, g, lr_train, total_loop, train_loop, lr_dd=None):
         self.tap_number = tap_number
         self.lr_train = lr_train
         self.lr_dd = lr_dd
@@ -175,7 +175,7 @@ class LmsPll(Equalizer):
         from .utilities import _segment_axis
         import numpy as np
         from .numba_backend import lms_equalize_core_pll
-        train_symbol = np.asarray(signal.symbol[:, self.tap_number // 2 // signal.sps:],order='C')
+        train_symbol = np.asarray(signal.symbol[:, self.tap_number // 2 // signal.sps:], order='C')
         samples_xpol = _segment_axis(signal[0], self.tap_number, self.tap_number - signal.sps)
         samples_ypol = _segment_axis(signal[1], self.tap_number, self.tap_number - signal.sps)
         self.error_xpol_array = np.zeros((self.total_loop, len(samples_xpol)))
@@ -183,20 +183,21 @@ class LmsPll(Equalizer):
 
         for idx in range(self.total_loop):
             is_train = idx < self.train_loop
-            symbols, self.wxx, self.wxy, self.wyx,  self.wyy, error_xpol_array, error_ypol_array \
+            symbols, self.wxx, self.wxy, self.wyx, self.wyy, error_xpol_array, error_ypol_array \
                 = lms_equalize_core_pll(samples_xpol, samples_ypol, self.g, train_symbol, self.wxx, self.wyy, self.wxy,
                                         self.wyx, self.lr_train, self.lr_dd, is_train)
 
             self.error_xpol_array[idx] = np.abs(error_xpol_array[0]) ** 2
             self.error_ypol_array[idx] = np.abs(error_ypol_array[0]) ** 2
 
-        signal.symbol = train_symbol[:,:symbols.shape[1]]
+        signal.symbol = train_symbol[:, :symbols.shape[1]]
         signal.samples = symbols
         return signal
+
     def __call__(self, signal):
         from ..utilities import cpu
         with cpu(signal) as signal:
-            return  self.prop(signal)
+            return self.prop(signal)
 
 
 class CPE:

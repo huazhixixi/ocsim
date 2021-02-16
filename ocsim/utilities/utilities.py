@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from DensityPlot import density2d
 
 from ..core import Signal
-
-import numpy as np
 
 
 def scatterplot(signal, interval=1, is_density=False, size=1):
@@ -67,8 +66,8 @@ def read_matfiles(file_name, is_wdm=False, device='cpu'):
     symbol_number = data["symbol_number"][0, 0]
     qam_order = data['qam_order'][0, 0]
     pol_number = data['pol_number'][0, 0]
-    ase_power_12p5 = data['ase_power_12p5'][0,0]
-    signal_power = data['signal_power'][0,0]
+    ase_power_12p5 = data['ase_power_12p5'][0, 0]
+    signal_power = data['signal_power'][0, 0]
     if not is_wdm:
         signal = QamSignal(SignalSetting(center_freq=center_freq,
                                          sps=sps,
@@ -103,7 +102,9 @@ def save_matfiles(signal: QamSignal, file_name, is_wdm):
         raise NotImplementedError
     signal.to(device)
 
+
 from contextlib import contextmanager
+
 
 @contextmanager
 def cpu(signal):
@@ -112,52 +113,32 @@ def cpu(signal):
     yield signal
     signal.to(original_device)
 
+
 @contextmanager
-def cuda(signal,cuda_number):
+def cuda(signal, cuda_number):
     original_device = signal.device
     signal.to(f'cuda:cuda_number')
     yield signal
     signal.to(original_device)
 
 
-def load_ase(signal:QamSignal,osnr_db):
+def load_ase(signal: QamSignal, osnr_db):
     from ..device_manager import device_selection
-    @device_selection(signal.device,True)
+    @device_selection(signal.device, True)
     def load_ase_real(backend):
         baudrate = signal.symbol_rate
-        snr_db = osnr_db - 10*backend.log10(baudrate/12.5e9)
-        snr_linear = 10**(snr_db/10)
+        snr_db = osnr_db - 10 * backend.log10(baudrate / 12.5e9)
+        snr_linear = 10 ** (snr_db / 10)
         signal.normalize()
 
-        noise_power = signal.power(veborse=False)/snr_linear
-        noise_power_each_pol = noise_power/2
-        psd_each_pol = noise_power_each_pol/signal.symbol_rate
+        noise_power = signal.power(veborse=False) / snr_linear
+        noise_power_each_pol = noise_power / 2
+        psd_each_pol = noise_power_each_pol / signal.symbol_rate
         noise_power_each_pol = psd_each_pol * signal.fs
-        noise = backend.sqrt(noise_power_each_pol/2) * (backend.random.randn(*signal.shape)+1j*backend.random.randn(*signal.shape))
+        noise = backend.sqrt(noise_power_each_pol / 2) * (
+                    backend.random.randn(*signal.shape) + 1j * backend.random.randn(*signal.shape))
         signal[:] = signal[:] + noise
         return signal
+
     return load_ase_real()
 
-
-
-
-
-class Transimitter:
-
-    def __init__(self,signal_setting,dac_sps,beta,laser_power_dbm):
-        self.signal_setting = signal_setting
-        self.dac_sps = dac_sps
-        self.beta = beta
-        self.laser_power = laser_power_dbm
-
-    def prop(self,dsp_modules=None):
-
-        signal = QamSignal(self.signal_setting)
-        if dsp_modules is None:
-            dsp_modules = []
-            from ..tranceiver import Laser,PulseShaping,IdealResampler
-            dsp_modules.extend([PulseShaping(self.beta),IdealResampler(signal.sps,self.dac_sps),Laser(self.laser_power)])
-        for module in dsp_modules:
-            signal = module(signal)
-
-        return signal

@@ -1,5 +1,6 @@
-from ..device_manager import cuda_number, device_selection
 from dataclasses import dataclass
+
+from ..device_manager import device_selection
 
 
 @dataclass
@@ -28,8 +29,8 @@ class Signal(object):
         self.center_freq = center_freq
         self.sps = sps
         self.device = 'cpu'
-        self.ase_power_12p5 = 0 # set in EDFA
-        self.signal_power = None # set in Laser
+        self.ase_power_12p5 = 0  # set in EDFA
+        self.signal_power = None  # set in Laser
         self.to(device)
         self.make_sure_2d()
 
@@ -72,7 +73,8 @@ class Signal(object):
     def normalize(self):
         @device_selection(self.device, provide_backend=True)
         def normalize_(backend, signal_obj):
-            factor = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1, keepdims=True)
+            factor = backend.mean(backend.abs(
+                signal_obj[:]) ** 2, axis=-1, keepdims=True)
             signal_obj[:] = signal_obj[:] / backend.sqrt(factor)
             return signal_obj
 
@@ -86,6 +88,7 @@ class Signal(object):
 
     def power(self, veborse=True):
         import numpy as np
+
         @device_selection(self.device, True)
         def power_(backend, signal_obj):
             power = backend.mean(backend.abs(signal_obj[:]) ** 2, axis=-1)
@@ -106,7 +109,8 @@ class Signal(object):
     def float(self):
         @device_selection(self.device, True)
         def float_(backend, signal_obj):
-            signal_obj.samples = backend.asarray(signal_obj.samples, dtype=backend.complex64)
+            signal_obj.samples = backend.asarray(
+                signal_obj.samples, dtype=backend.complex64)
             return signal_obj
 
         return float_(self)
@@ -123,8 +127,24 @@ class Signal(object):
     def imag(self):
         return self.samples.imag
 
-    def downsample(self,factor):
-        self.samples = self.samples[:,::factor]
+    def downsample(self, factor):
+        self.samples = self.samples[:, ::factor]
+
+    def summary(self):
+        string1 = str(id(self))
+        print(string1)
+        from prettytable import PrettyTable
+        information = PrettyTable()
+        information.field_name = ["symbol_rate [GHz]",
+                                  "symbol_length",
+                                  "sps", "fs", "mf", "center_freq", "power[w]"]
+        information.add_row([self.symbol_rate/1e9, self.symbol_number, self.sps,
+                             self.fs /
+                             1e9, self.qam_order, self.center_freq, self.power(
+                                 False)
+                             ])
+
+        print(information)
 
 
 class QamSignal(Signal):
@@ -144,10 +164,13 @@ class QamSignal(Signal):
 
         if signal_setting.need_init:
             self.nbits = self.symbol_number * np.log2(self.qam_order)
-            self.bit_sequence = np.random.randint(0, 2, (self.pol_number, int(self.nbits)), dtype=bool)
-            self.constl = cal_symbols_qam(self.qam_order) / np.sqrt(cal_scaling_factor_qam(self.qam_order))
+            self.bit_sequence = np.random.randint(
+                0, 2, (self.pol_number, int(self.nbits)), dtype=bool)
+            self.constl = cal_symbols_qam(
+                self.qam_order) / np.sqrt(cal_scaling_factor_qam(self.qam_order))
             self.map()
-            samples = np.zeros(shape=(self.pol_number, self.symbol_number * signal_setting.sps), dtype=np.complex)
+            samples = np.zeros(shape=(
+                self.pol_number, self.symbol_number * signal_setting.sps), dtype=np.complex)
             samples[:, ::signal_setting.sps] = self.symbol
             super(QamSignal, self).__init__(samples=samples, center_freq=signal_setting.center_freq,
                                             sps=signal_setting.sps,
@@ -163,7 +186,8 @@ class QamSignal(Signal):
     def map(self):
         from .constl import generate_mapping, map
         _, encoding = generate_mapping(self.qam_order)
-        self.symbol = map(self.bit_sequence, encoding=encoding, M=self.qam_order)
+        self.symbol = map(self.bit_sequence,
+                          encoding=encoding, M=self.qam_order)
 
 
 class WdmSignal(Signal):

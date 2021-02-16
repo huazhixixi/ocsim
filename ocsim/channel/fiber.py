@@ -1,4 +1,5 @@
 import dataclasses
+
 import numpy as np
 from scipy.constants import c
 
@@ -72,7 +73,7 @@ class NonlinearFiber:
             nstep = int(np.floor(nstep))
             freq = backend.fft.fftfreq(signal.shape[1], 1 / signal.fs)
             omeg = 2 * backend.pi * freq
-            self.D = -1j / 2 * self.setting.beta2(c/signal.center_freq) * omeg ** 2
+            self.D = -1j / 2 * self.setting.beta2(c / signal.center_freq) * omeg ** 2
             N = 8 / 9 * 1j * self.setting.gamma
             atten = -self.setting.alphalin / 2
             last_step = self.setting.length - self.setting.step_length * nstep
@@ -130,12 +131,14 @@ class NonlinearFiber:
         time_x = backend.fft.ifft(freq_x)
         time_y = backend.fft.ifft(freq_y)
         return time_x, time_y
-    
-    def __call__(self,signal):
+
+    def __call__(self, signal):
         return self.prop(signal)
+
 
 def pmd(signal):
     pass
+
 
 def sop(signal):
     pass

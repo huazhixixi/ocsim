@@ -1,6 +1,6 @@
-import numpy as np
-from ..device_manager import device_selection
 from scipy.constants import h, c
+
+from ..device_manager import device_selection
 
 
 class EDFA:
@@ -23,7 +23,7 @@ class EDFA:
         @device_selection(signal.device, True)
         def noise_sequence_real(backend):
             noise_sequence = backend.sqrt(noise_power / 2) * (
-                        backend.random.randn(*signal.shape) + 1j * backend.random.randn(*signal.shape))
+                    backend.random.randn(*signal.shape) + 1j * backend.random.randn(*signal.shape))
             return noise_sequence
 
         return noise_sequence_real()
@@ -39,8 +39,8 @@ class ConstantGainEDFA(EDFA):
         @device_selection(signal.device, True)
         def core_real(backend):
             noise_sequence = self.noise_sequence(signal)
-            noise_power = self.calc_noise_power(c/signal.center_freq,signal.fs)
-            psd = noise_power/signal.fs
+            noise_power = self.calc_noise_power(c / signal.center_freq, signal.fs)
+            psd = noise_power / signal.fs
             ase_12p5 = psd * 12.5e9
             signal.ase_power_12p5 += ase_12p5
             signal[:] = signal[:] * backend.sqrt(self.gain_linear)

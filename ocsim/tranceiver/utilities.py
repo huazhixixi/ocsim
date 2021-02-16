@@ -1,24 +1,26 @@
 from ..device_manager import device_selection
 
-def rescale_signal(signal,device,swing=1):
+
+def rescale_signal(signal, device, swing=1):
     """
     Rescale the (1-pol) signal to (-swing, swing).
     """
-    @device_selection(device,True)
+
+    @device_selection(device, True)
     def rescale_signal_real(backend):
         E = signal[:]
 
         if backend.iscomplexobj(E):
             scale_factor = backend.maximum(backend.abs(E.real).max(), backend.abs(E.imag).max())
-            E = E/scale_factor * swing
+            E = E / scale_factor * swing
 
         if not backend.iscomplexobj(E):
             scale_factor = backend.abs(E).max()
-            E = E/ scale_factor * swing
+            E = E / scale_factor * swing
 
         return E
-    return rescale_signal_real()
 
+    return rescale_signal_real()
 
 
 def _segment_axis(a, length, overlap, mode='cut', append_to_end=0):
@@ -42,11 +44,11 @@ def _segment_axis(a, length, overlap, mode='cut', append_to_end=0):
         append_to_end:    The value to use for end='pad'
         a new array will be returned.
     """
-    if hasattr(a,'device'):
+    if hasattr(a, 'device'):
         import cupy as np
     else:
         import numpy as np
-    if a.ndim !=1:
+    if a.ndim != 1:
         raise Exception("Error, input array must be 1d")
     if overlap > length:
         raise Exception("overlap cannot exceed the whole length")

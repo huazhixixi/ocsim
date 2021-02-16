@@ -1,6 +1,8 @@
 import numpy as np
+
+from .utilities import rescale_signal
 from ..device_manager import device_selection
-from .utilities import  rescale_signal
+
 
 def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
     """
@@ -14,25 +16,26 @@ def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
     Returns:
         sig_out:        Output quantized waveform
     """
+
     # 2**nbits interval within (-1,1), output swing is (-1+delta/2,1-delta/2)
     # Create a 2D signal
-    @device_selection(signal.device,True)
+    @device_selection(signal.device, True)
     def quantize_signal_real(backend):
         sig_in = signal
-        assert sig_in.samples.ndim ==2
+        assert sig_in.samples.ndim == 2
         # sig_in = backend.atleast_2d(sig_in)
         npols = sig_in.shape[0]
 
         # Rescale to
-        sig = backend.zeros((npols,sig_in.shape[1]), dtype=sig_in.dtype)
+        sig = backend.zeros((npols, sig_in.shape[1]), dtype=sig_in.dtype)
         if rescale_in:
             for pol in range(npols):
-                sig[pol] = rescale_signal(sig_in[pol], sig_in.device,swing=1)
+                sig[pol] = rescale_signal(sig_in[pol], sig_in.device, swing=1)
 
         swing = 2
-        delta = swing/2**nbits
-        levels_out = backend.linspace(-1+delta/2, 1-delta/2, 2**nbits)
-        levels_dec = levels_out + delta/2
+        delta = swing / 2 ** nbits
+        levels_out = backend.linspace(-1 + delta / 2, 1 - delta / 2, 2 ** nbits)
+        levels_dec = levels_out + delta / 2
 
         sig_out = backend.zeros(sig.shape, dtype="complex")
         for pol in range(npols):
@@ -48,7 +51,9 @@ def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
             sig_out = sig_out * max_swing
         signal.samples = sig_out
         return signal
+
     return quantize_signal_real()
+
 
 def mux(signals, center_freq=None):
     freq = [signal.center_freq for signal in signals]
@@ -88,7 +93,7 @@ def mux(signals, center_freq=None):
 
 class Laser:
 
-    def __init__(self, power, lw=None,fo = None):
+    def __init__(self, power, lw=None, fo=None):
         self.power = power
         self.lw = lw
         self.fo = fo
@@ -109,18 +114,19 @@ class Laser:
                     f = np.cumsum(f)
                 signal[:] = backend.exp(1j * f) * signal[:]
             if self.fo is not None:
-                signal[:] = backend.exp(1j * 2*backend.pi * backend.arange(signal.shape[1])/signal.fs * self.fo)
+                signal[:] = backend.exp(1j * 2 * backend.pi * backend.arange(signal.shape[1]) / signal.fs * self.fo)
             signal.normalize()
-            power = 10**(self.power/10)/1000/signal.shape[0]
+            power = 10 ** (self.power / 10) / 1000 / signal.shape[0]
             signal[:] = backend.sqrt(power) * signal[:]
-            signal.signal_power = 10**(self.power/10)/1000
+            signal.signal_power = 10 ** (self.power / 10) / 1000
             return signal
+
         return core_real()
 
 
 class DAC:
 
-    def __init__(self,enob,cutoff,new_sps):
+    def __init__(self, enob, cutoff, new_sps):
         '''
         enob:effective number of bits
         cutoff: 3-db cutoff frequency
@@ -129,47 +135,48 @@ class DAC:
         self.cutoff = cutoff
         self.new_sps = new_sps
 
-    def __core(self,signal):
+    def __core(self, signal):
         from .dsp import IdealResampler
         from ..filter.filtering import filter_signal
-        signal = IdealResampler(signal.sps,new_sps=self.new_sps)(signal)
+        signal = IdealResampler(signal.sps, new_sps=self.new_sps)(signal)
         sig_enob_noise = quantize_signal(signal, nbits=self.enob, rescale_in=True, rescale_out=True)
 
-            # Apply 2-order bessel filter to simulate frequency response of DAC
+        # Apply 2-order bessel filter to simulate frequency response of DAC
         if self.cutoff is not None:
-            filter_sig_re = filter_signal(sig_enob_noise.real, signal.fs,self.cutoff, ftype="bessel", order=2)
-            filter_sig_im = filter_signal(sig_enob_noise.imag, signal.fs,self.cutoff, ftype="bessel", order=2)
+            filter_sig_re = filter_signal(sig_enob_noise.real, signal.fs, self.cutoff, ftype="bessel", order=2)
+            filter_sig_im = filter_signal(sig_enob_noise.imag, signal.fs, self.cutoff, ftype="bessel", order=2)
             sig_enob_noise.samples = filter_sig_re + 1j * filter_sig_im
         return sig_enob_noise
 
-
-    def __call__(self,signal):
+    def __call__(self, signal):
         return self.__core(signal)
+
 
 class ADC:
     pass
 
+
 class SimpleSingleChannelReceiver:
 
-    def __init__(self,kind,beta,fiber=None):
+    def __init__(self, kind, beta, fiber=None):
         self.kind = kind
         self.fiber = fiber
         self.beta = beta
 
-    def receiver_fiber(self,signal):
+    def receiver_fiber(self, signal):
         assert self.fiber is not None
-        from . dsp import PulseShaping, CDC,IdealResampler
+        from .dsp import CDC
         cdc = CDC(self.fiber)
         signal = cdc(signal)
         return self.receiver(signal)
 
-    def receiver_awgn(self,signal):
+    def receiver_awgn(self, signal):
         return self.receiver(signal)
 
-    def receiver(self,signal):
-        from . dsp import PulseShaping,IdealResampler
+    def receiver(self, signal):
+        from .dsp import PulseShaping, IdealResampler
         shaping = PulseShaping(self.beta)
-        resampler = IdealResampler(signal.sps,2)
+        resampler = IdealResampler(signal.sps, 2)
         signal = resampler(signal)
         signal = shaping(signal)
 
@@ -180,8 +187,30 @@ class SimpleSingleChannelReceiver:
         signal[:] = signal[:] * np.exp(-1j * phase)
         return signal
 
-    def __call__(self,signal):
-        if self.kind.lower()=="fiber":
+    def __call__(self, signal):
+        if self.kind.lower() == "fiber":
             self.receiver_fiber(signal)
-        if self.kind.lower()=="awgn":
+        if self.kind.lower() == "awgn":
             self.receiver_awgn(signal)
+
+from ..core import QamSignal
+class Transimitter:
+
+    def __init__(self, signal_setting, dac_sps, beta, laser_power_dbm):
+        self.signal_setting = signal_setting
+        self.dac_sps = dac_sps
+        self.beta = beta
+        self.laser_power = laser_power_dbm
+
+    def prop(self, dsp_modules=None):
+
+        signal = QamSignal(self.signal_setting)
+        if dsp_modules is None:
+            dsp_modules = []
+            from ..tranceiver import Laser, PulseShaping, IdealResampler
+            dsp_modules.extend(
+                [PulseShaping(self.beta), IdealResampler(signal.sps, self.dac_sps), Laser(self.laser_power)])
+        for module in dsp_modules:
+            signal = module(signal)
+
+        return signal

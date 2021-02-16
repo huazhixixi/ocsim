@@ -1,4 +1,4 @@
-def filter_signal(signal,fs,cutoff, ftype="bessel", order=2, analog=False):
+def filter_signal(signal, fs, cutoff, ftype="bessel", order=2, analog=False):
     """
     Apply an analog filter to a signal for simulating e.g. electrical bandwidth limitation
     Parameters
@@ -24,27 +24,29 @@ def filter_signal(signal,fs,cutoff, ftype="bessel", order=2, analog=False):
     with cpu(signal):
         sig = np.atleast_2d(signal[:])
 
-        Wn = cutoff*2*np.pi if analog else cutoff
+        Wn = cutoff * 2 * np.pi if analog else cutoff
         frmt = "ba" if analog else "sos"
         fs_in = None if analog else fs
 
         if ftype == "bessel":
-            system = scisig.bessel(order, Wn,  'low', norm='mag', analog=analog, output=frmt, fs=fs_in)
+            system = scisig.bessel(order, Wn, 'low', norm='mag', analog=analog, output=frmt, fs=fs_in)
         elif ftype == "butter":
-            system = scisig.butter(order, Wn, 'low',  analog=analog, output=frmt, fs=fs_in)
+            system = scisig.butter(order, Wn, 'low', analog=analog, output=frmt, fs=fs_in)
 
         if analog:
-            t = np.arange(0, sig.shape[1])*1/fs
+            t = np.arange(0, sig.shape[1]) * 1 / fs
             sig2 = np.zeros_like(sig)
             for i in range(sig.shape[0]):
-                sig2[i] = scisig.lfilter(system[0],system[1],sig[i])
+                sig2[i] = scisig.lfilter(system[0], system[1], sig[i])
 
                 # sig2[i] = yo.astype(sig.dtype)
         else:
             sig2 = scisig.sosfilt(system.astype(sig.dtype), sig, axis=-1)
         signal.samples = sig2
         # signal.to(device)
-    return signal,system
+    return signal, system
+
+
 #
 # def moving_average(sig, N=3):
 #     """
@@ -65,7 +67,5 @@ def filter_signal(signal,fs,cutoff, ftype="bessel", order=2, analog=False):
 #         return ((ret[:, N:] - ret[:,:-N])/N).flatten()
 #     else:
 
-def ideal_low_filter(signal,bw):
+def ideal_low_filter(signal, bw):
     pass
-
-

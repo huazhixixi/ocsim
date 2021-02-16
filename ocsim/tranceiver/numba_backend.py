@@ -1,13 +1,14 @@
 import numba
 import numpy as np
-from numba import complex128,double,boolean
+from numba import complex128, double, boolean
 
 lms_equalize_core_pll_type = \
     [(complex128[:, :], complex128[:, :], double, complex128[:, :], complex128[:, :], complex128[:, :],
-      complex128[:, :], complex128[:, :],double,double,boolean)]
+      complex128[:, :], complex128[:, :], double, double, boolean)]
 
-@numba.njit(lms_equalize_core_pll_type,cache=True)
-def lms_equalize_core_pll(ex, ey,g, train_symbol,wxx, wyy, wxy, wyx, mu_train,mu_dd,is_train):
+
+@numba.njit(lms_equalize_core_pll_type, cache=True)
+def lms_equalize_core_pll(ex, ey, g, train_symbol, wxx, wyy, wxy, wyx, mu_train, mu_dd, is_train):
     symbols = np.zeros((2, ex.shape[0]), dtype=np.complex128)
     error_xpol_array = np.zeros((1, ex.shape[0]), dtype=np.float64)
     error_ypol_array = np.zeros((1, ey.shape[0]), dtype=np.float64)
@@ -24,21 +25,22 @@ def lms_equalize_core_pll(ex, ey,g, train_symbol,wxx, wyy, wxy, wyx, mu_train,mu
         xout_no_pll = np.sum(wxx * xx) + np.sum(wxy * yy)
         yout_no_pll = np.sum(wyx * xx) + np.sum(wyy * yy)
 
+        symbols[0, idx] = xout_no_pll * np.exp(-1j * phase_error_xpol[0, idx])
+        symbols[1, idx] = yout_no_pll * np.exp(-1j * phase_error_ypol[0, idx])
 
-        symbols[0, idx] = xout_no_pll * np.exp(-1j*phase_error_xpol[0,idx])
-        symbols[1, idx] = yout_no_pll * np.exp(-1j*phase_error_ypol[0,idx])
-
-        xout =  xout_no_pll * np.exp(-1j*phase_error_xpol[0,idx])
-        yout =  yout_no_pll * np.exp(-1j*phase_error_ypol[0,idx])
+        xout = xout_no_pll * np.exp(-1j * phase_error_xpol[0, idx])
+        yout = yout_no_pll * np.exp(-1j * phase_error_ypol[0, idx])
 
         if is_train:
             error_xpol = train_symbol_xpol[idx] - xout
             error_ypol = train_symbol_ypol[idx] - yout
-            pll_error_x = np.imag(xout * np.conj(train_symbol_xpol[idx])) / np.abs(xout * np.conj(train_symbol_xpol[idx]))
-            pll_error_y = np.imag(yout * np.conj(train_symbol_ypol[idx])) / np.abs(yout * np.conj(train_symbol_ypol[idx]))
-            if idx < len(ex)-1:
-                phase_error_xpol[0,idx+1]=g * pll_error_x+phase_error_xpol[0,idx]
-                phase_error_ypol[0,idx+1]=g * pll_error_y+phase_error_ypol[0,idx]
+            pll_error_x = np.imag(xout * np.conj(train_symbol_xpol[idx])) / np.abs(
+                xout * np.conj(train_symbol_xpol[idx]))
+            pll_error_y = np.imag(yout * np.conj(train_symbol_ypol[idx])) / np.abs(
+                yout * np.conj(train_symbol_ypol[idx]))
+            if idx < len(ex) - 1:
+                phase_error_xpol[0, idx + 1] = g * pll_error_x + phase_error_xpol[0, idx]
+                phase_error_ypol[0, idx + 1] = g * pll_error_y + phase_error_ypol[0, idx]
 
         else:
             raise NotImplementedError
