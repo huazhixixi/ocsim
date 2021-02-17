@@ -41,7 +41,7 @@ class ConstantGainEDFA(EDFA):
             noise_sequence = self.noise_sequence(signal)
             noise_power = self.calc_noise_power(c / signal.center_freq, signal.fs)
             psd = noise_power / signal.fs
-            ase_12p5 = psd * 12.5e9
+            ase_12p5 = psd * 12.5e9 * signal.shape[0]
             signal.ase_power_12p5 += ase_12p5
             signal[:] = signal[:] * backend.sqrt(self.gain_linear)
             signal[:] = signal[:] + noise_sequence

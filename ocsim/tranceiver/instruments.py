@@ -2,6 +2,11 @@ import numpy as np
 
 from .utilities import rescale_signal
 from ..device_manager import device_selection
+from ..core import QamSignal
+from typing import List
+from .dsp import PulseShaping,IdealResampler
+from ..core import SignalSetting
+
 
 
 def quantize_signal(signal, nbits=6, rescale_in=True, rescale_out=True):
@@ -193,8 +198,8 @@ class SimpleSingleChannelReceiver:
         if self.kind.lower() == "awgn":
             self.receiver_awgn(signal)
 
-from ..core import QamSignal
-class Transimitter:
+
+class SimpleSingleChannelTransimitter:
 
     def __init__(self, signal_setting, dac_sps, beta, laser_power_dbm):
         self.signal_setting = signal_setting
@@ -214,3 +219,32 @@ class Transimitter:
             signal = module(signal)
 
         return signal
+
+class SimpleWdmTransimitter:
+
+    def __init__(self,signal_setting:List[SignalSetting],beta:List[float],
+                 laser_power:List[float],fs):
+
+        self.signal_setting = signal_setting
+        self.beta = beta
+        self.laser_power = laser_power
+        self.fs = fs
+
+    def prop(self):
+        signals = []
+        cnt = 0
+        for setting in self.signal_setting:
+            signal = QamSignal(setting)
+            signal = PulseShaping(self.beta[cnt])(signal)
+            sps_new = self.fs/signal.symbol_rate
+            signal = IdealResampler(signal.sps, sps_new)(signal)
+            signals.append(signal)
+            cnt+=1
+
+        from .instruments import mux
+        wdm_signal = mux(signals)
+
+        return wdm_signal
+
+    def __call__(self):
+        return self.prop()

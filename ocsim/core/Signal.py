@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from ..device_manager import device_selection
 import numpy as np
 
+
+
+
 @dataclass
 class SignalSetting:
     center_freq: float
@@ -129,6 +132,7 @@ class Signal(object):
 
     def downsample(self, factor):
         self.samples = self.samples[:, ::factor]
+        return self
 
     def summary(self):
         string1 = str(id(self))
@@ -138,6 +142,7 @@ class Signal(object):
         information.field_names = ["symbol_rate [GHz]",
                                    "symbol_length",
                                    "sps", "fs[GHz]", "mf", "center_freq[THz]", "power[dBm]"]
+
         information.add_row([self.symbol_rate/1e9, self.symbol_number, self.sps,
                              self.fs /1e9, self.qam_order, self.center_freq/1e12,
                              f"{10*np.log10(self.power(False)*1000) :.4}"
@@ -188,6 +193,8 @@ class QamSignal(Signal):
         self.symbol = map(self.bit_sequence,
                           encoding=encoding, M=self.qam_order)
 
+    def osnr(self):
+        return 10*np.log10(self.power(False)/self.ase_power_12p5)
 
 class WdmSignal(Signal):
 
