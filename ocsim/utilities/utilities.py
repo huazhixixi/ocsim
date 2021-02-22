@@ -115,9 +115,9 @@ def cpu(signal):
 
 
 @contextmanager
-def cuda(signal, cuda_number):
+def cuda(signal, cuda_number=0):
     original_device = signal.device
-    signal.to(f'cuda:cuda_number')
+    signal.to(f'cuda:{cuda_number}')
     yield signal
     signal.to(original_device)
 
