@@ -56,12 +56,14 @@ class Visulization:
                     add_scatter_series(f"constl_{pol[index]}", "", x=row.real.tolist(), y=row.imag.tolist(), size=1)
 
         def psd():
+            fft_number = get_value("FFT_number")
+            print(fft_number)
             pol = {0: 'xpol', 1: 'ypol'}
             for index, row in enumerate(signal[:]):
                 from scipy.signal import welch
-                f, pxx = welch(row, fs=signal.fs, nfft=16384, detrend=None, return_onesided=False)
+                f, pxx = welch(row, fs=signal.fs, nfft=fft_number, detrend=None, return_onesided=False)
                 pxx = 10 * np.log10(pxx/pxx.max())
-                add_line_series(f"psd_{pol[index]}##plot", "", x=f.tolist(), y=pxx.tolist(),weight=4)
+                add_line_series(f"psd_{pol[index]}##plot", "", x=f, y=pxx, weight=4)
 
         def clear():
 
@@ -87,6 +89,7 @@ class Visulization:
 
         with window("psd_ypol", height=400, width=400, x_pos=400, y_pos=400,no_close=True):
             add_plot("psd_ypol##plot", height=350, width=350)
+        add_value("FFT_number", 16384)
         scatter()
         psd()
         with window("summary", height=600, width=400, x_pos=1400, y_pos=0, no_close=True):
@@ -97,18 +100,14 @@ class Visulization:
             add_button("constellation",callback=scatter)
             add_button("PSD",callback=psd)
             add_button("clear",callback=clear)
-            # add_button("Time")
+            add_input_int("FFT_number",source="FFT_number",default_value=16384)
+
 
         set_main_window_size(1800, 1000)
         set_theme('Light')
         start_dearpygui(primary_window="primary_window")
 
 
+# show_debug()
 
 
-
-signal = QamSignal(SignalSetting(center_freq=193.1e12))
-shaping = PulseShaping(beta=0.2)
-signal = shaping(signal)
-
-Visulization.summary_dp(signal)

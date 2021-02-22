@@ -48,7 +48,7 @@ def receiver(file_name):
     print(snr_meter(signal))
     return signal.normalize()
 
-# simulate(False)
+simulate(False)
 #
 #
 from scipy.signal import correlate
@@ -70,32 +70,32 @@ for power in [-3,-2,-1,0,1,2]:
     pha_corr = pha_corr[max_index+1:]
     amp_corr_list.append(amp_corr)
     pha_corr_list.append(pha_corr)
-
-from FigureManger import *
-
-
-
-
-r = []
-p = []
-for row in amp_corr_list:
-    r.append(np.abs(10*np.log10(1/(np.sum(np.abs(row[:6])))))-6)
-
-for row in pha_corr_list:
-    p.append(np.abs(10*np.log10(1/np.sum(np.abs(row[:30])))))
-
-data = DataSetting(
-
-    x = np.vstack([[-3,-2,-1,0,1,2]]*6),
-    y = np.vstack([r,p,[30,28,26,24,22,20]])
-)
-
-layout = Layout(
-    x_axis_name="Launch power [dBm]",
-    y_axis_name="Value [dB]",
-    legend = ("R(n)","P(n)","SNR (NLI)"),
-    markers= ("o", "^", "x")
-)
-
-fig = FigureManger(data=data,layout=layout,keyword=["-3","-2","-1","0","1","2","plot the anc"])
-fig.plot()
+#
+# from FigureManger import *
+#
+#
+#
+#
+# r = []
+# p = []
+# for row in amp_corr_list:
+#     r.append(np.abs(10*np.log10(1/(np.sum(np.abs(row[:6])))))-6)
+#
+# for row in pha_corr_list:
+#     p.append(np.abs(10*np.log10(1/np.sum(np.abs(row[:30])))))
+#
+# data = DataSetting(
+#
+#     x = np.vstack([[-3,-2,-1,0,1,2]]*6),
+#     y = np.vstack([r,p,[30,28,26,24,22,20]])
+# )
+#
+# layout = Layout(
+#     x_axis_name="Launch power [dBm]",
+#     y_axis_name="Value [dB]",
+#     legend = ("R(n)","P(n)","SNR (NLI)"),
+#     markers= ("o", "^", "x")
+# )
+#
+# fig = FigureManger(data=data,layout=layout,keyword=["-3","-2","-1","0","1","2","plot the anc"])
+# fig.plot()
