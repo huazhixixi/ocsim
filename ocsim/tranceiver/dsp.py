@@ -2,7 +2,7 @@ import fractions
 
 from ..core import Signal
 from ..device_manager import device_selection
-
+# from ..device_manager import cuda
 
 def resamplingfactors(fold, fnew):
     ratn = fractions.Fraction(fnew / fold).limit_denominator()
@@ -195,7 +195,7 @@ class LmsPll(Equalizer):
         return signal
 
     def __call__(self, signal):
-        from ..utilities import cpu
+        from ..device_manager import cpu
         with cpu(signal) as signal:
             return self.prop(signal)
 

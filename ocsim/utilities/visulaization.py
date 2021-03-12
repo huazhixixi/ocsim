@@ -1,11 +1,7 @@
 from dearpygui.core import *
 from dearpygui.simple import *
-from ocsim import Signal
-from ocsim import cpu
+from ..device_manager import cpu
 import numpy as np
-from ocsim import QamSignal,SignalSetting,PulseShaping
-
-
 
 class Visulization:
 

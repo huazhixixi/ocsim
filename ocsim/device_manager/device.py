@@ -1,3 +1,22 @@
+from contextlib import contextmanager
+
+
+@contextmanager
+def cpu(signal):
+    original_device = signal.device
+    signal.to('cpu')
+    yield signal
+    signal.to(original_device)
+
+
+@contextmanager
+def cuda(signal, cuda_number=0):
+    original_device = signal.device
+    signal.to(f'cuda:{cuda_number}')
+    yield signal
+    signal.to(original_device)
+
+
 def cuda_number(device):
     assert 'cuda' in device
     if device == 'cuda':

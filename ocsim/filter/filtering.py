@@ -20,7 +20,7 @@ def filter_signal(signal, fs, cutoff, ftype="bessel", order=2, analog=False):
     """
     import numpy as np
     import scipy.signal as scisig
-    from ..utilities import cpu
+    from ..device_manager import cpu
     with cpu(signal):
         sig = np.atleast_2d(signal[:])
 
