@@ -219,6 +219,8 @@ class SimpleSingleChannelTransimitter:
             signal = module(signal)
 
         return signal
+    def __call__(self, dsp_modules=None):
+        return self.prop(dsp_modules)
 
 class SimpleWdmTransimitter:
 

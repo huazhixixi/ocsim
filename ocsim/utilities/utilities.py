@@ -20,8 +20,8 @@ def scatterplot(signal, interval=1, is_density=False, size=1):
         fig, axes = plt.subplots(1, samples.shape[0])
         axes = np.atleast_2d(axes)[0]
         pol = 0
-        xlim = [samples[pol].real.min() - 0.005, samples[pol].real.max() + 0.005]
-        ylim = [samples[pol].imag.min() - 0.005, samples[pol].imag.max() + 0.005]
+        xlim = [samples[pol].real.min() - 0.02, samples[pol].real.max() + 0.02]
+        ylim = [samples[pol].imag.min() - 0.02, samples[pol].imag.max() + 0.02]
         for ax in axes:
 
             ax.set_xlim(xlim)

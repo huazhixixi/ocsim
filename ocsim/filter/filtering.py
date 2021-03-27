@@ -34,16 +34,14 @@ def filter_signal(signal, fs, cutoff, ftype="bessel", order=2, analog=False):
             system = scisig.butter(order, Wn, 'low', analog=analog, output=frmt, fs=fs_in)
 
         if analog:
-            t = np.arange(0, sig.shape[1]) * 1 / fs
+            # t = np.arange(0, sig.shape[1]) * 1 / fs
             sig2 = np.zeros_like(sig)
             for i in range(sig.shape[0]):
                 sig2[i] = scisig.lfilter(system[0], system[1], sig[i])
 
-                # sig2[i] = yo.astype(sig.dtype)
         else:
             sig2 = scisig.sosfilt(system.astype(sig.dtype), sig, axis=-1)
         signal.samples = sig2
-        # signal.to(device)
     return signal, system
 
 

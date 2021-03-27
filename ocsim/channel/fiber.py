@@ -50,6 +50,10 @@ class FiberSetting:
         return effective_length
 
 
+
+
+
+
 class NonlinearFiber:
 
     def __init__(self, fiber_setting: FiberSetting):
@@ -134,4 +138,23 @@ class NonlinearFiber:
 
     def __call__(self, signal):
         return self.prop(signal)
+
+
+class SinglePolFiber(NonlinearFiber):
+
+    def __init__(self, fiber_setting: FiberSetting):
+        super().__init__(fiber_setting)
+
+    def linear_prop(self, backend, timex, timey, length):
+        pass
+
+    def nonlinear_prop(self, backend, N, time_x, time_y, step_length=None):
+        pass
+
+    def prop(self,signal):
+        from ..device_manager import device_selection
+        @device_selection(signal.device,True)
+        def prop_(backend):
+            pass
+
 

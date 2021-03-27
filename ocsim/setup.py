@@ -3,7 +3,7 @@ import setuptools
 
 setup(
     name="ocsim",
-    version='0.0.91',
+    version='0.0.92',
     author='huazhi lun',
     author_email='huazhi.lun@sjtu.edu.cn',
     description="simulator for optical communications",
