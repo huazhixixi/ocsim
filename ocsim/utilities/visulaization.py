@@ -106,4 +106,125 @@ class Visulization:
 
 # show_debug()
 
+from functools import partial
+import numpy as np
+import matplotlib.pyplot as plt
+import dataclasses
 
+@dataclasses.dataclass
+class Layout:
+
+    # axis setting
+    xaxis_name:str
+    yaxis_name:str
+
+    # subplots setting
+    nrows:int
+    ncols:int
+
+    # legend setting
+    labels : [str] = ()
+
+    # mode setting
+    mode:str = "line+scatter"
+
+    # marker setting
+    markers : [str] = ()
+
+    # color setting
+
+    colors: [str] = ()
+
+    default_colors:bool = True
+    default_markers:bool=True
+
+    # is_latex
+    is_latex:bool = False
+
+class TwoDimensionData:
+
+    def __init__(self,x:[np.ndarray],y:[np.ndarray]):
+        self.x = x
+        self.y = y
+
+
+
+class FigureManager:
+
+    def __init__(self,layout:Layout,data:TwoDimensionData):
+        self.layout = layout
+        self.data = data
+        self.plot = None
+
+    def show(self):
+        x = self.data.x
+        y = self.data.y
+        if self.layout.is_latex:
+            style = ['science', 'ieee']
+        else:
+            style = ['science', 'ieee','no-latex']
+
+        with plt.style.context(style):
+
+            for index, row in enumerate(x):
+
+                    if self.layout.default_markers and self.layout.default_colors:
+                        self.plot = partial(plt.plot,
+                                            label = self.layout.labels[index])
+                    elif self.layout.default_markers and not self.layout.default_colors:
+                        self.plot = partial(plt.plot,
+                                            label=self.layout.labels[index],color = self.layout.colors[index])
+
+                    elif not self.layout.default_markers and not self.layout.default_colors:
+                        self.plot = partial(plt.plot,
+                                            label=self.layout.labels[index],color = self.layout.colors[index],
+                                            marker = self.layout.markers[index])
+                    else:
+                        raise NotImplementedError
+
+                    self.plot(row,y[index])
+
+            plt.xlabel(self.layout.xaxis_name)
+            plt.ylabel(self.layout.yaxis_name)
+            plt.grid()
+            plt.tight_layout()
+            plt.legend()
+            plt.show()
+
+    def save(self,name):
+        import joblib
+        joblib.dump([self.layout,self.data],name)
+
+
+    @classmethod
+    def load(cls,name):
+        import joblib
+
+        data = joblib.load(name)
+        layout, name = data[0], data[1]
+
+        instance = cls(layout,data)
+        # instance.show()
+
+
+if __name__ == '__main__':
+    layout = Layout(
+        xaxis_name="Giao",
+        yaxis_name="heihei",
+        nrows=1,
+        ncols=1,
+        labels=['zheshi',"eee"],
+        is_latex=False
+    )
+
+    data = TwoDimensionData(
+        x = np.array([[1,2,3,4],[1,2,3,4]]),
+        y = np.array([[1,2,3,4],[4,5,6,7]])
+    )
+
+    fig = FigureManager(layout,data)
+    fig.save("ceshi")
+        # fig.show()
+    fig.load("ceshi")
+
+    fig.show()
